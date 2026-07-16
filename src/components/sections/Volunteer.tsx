@@ -229,7 +229,7 @@ type Errors = Partial<
   >
 >;
 
-const SITE_URL = "https://sfuganda.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sfuganda.com";
 const SHARE_TEXT = `${brand.name} — ${brand.rally} Help vulnerable children in Uganda.`;
 
 export function Volunteer() {

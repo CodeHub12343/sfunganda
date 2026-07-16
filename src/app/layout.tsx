@@ -21,7 +21,7 @@ const SITE = {
   tagline: "Providing Hope · Creating Home · Creating Lives",
   description:
     "Sarah's Foundation connects compassionate people with life-changing initiatives that provide shelter, education, care, and opportunity to vulnerable children and families.",
-  url: "https://sarahsfoundation.org",
+  url: "https://www.sfuganda.com",
 };
 
 export const metadata: Metadata = {
