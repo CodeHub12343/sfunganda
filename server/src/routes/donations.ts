@@ -1,7 +1,7 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { asyncHandler, parseBody } from "./_shared.js";
-import { checkoutBody } from "@shared/schemas/common.js";
+import { donateCheckoutBody } from "@shared/schemas/finance.js";
 import { createCheckoutSession } from "@/services/donations.js";
 
 const router = Router();
@@ -17,7 +17,7 @@ router.post(
   "/checkout",
   limiter,
   asyncHandler(async (req, res) => {
-    const body = parseBody(checkoutBody, req.body);
+    const body = parseBody(donateCheckoutBody, req.body);
     const result = await createCheckoutSession(body);
     res.json({ data: result });
   })

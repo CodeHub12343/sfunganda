@@ -22,6 +22,8 @@ import projectsRoutes from "./routes/projects.js";
 import accomplishmentsRoutes from "./routes/accomplishments.js";
 import metricsRoutes from "./routes/metrics.js";
 import publicPortalRoutes from "./routes/publicPortal.js";
+import financeRoutes from "./routes/finance.js";
+import stripeWebhookRoutes from "./routes/stripeWebhook.js";
 
 export function buildApp() {
   const app = express();
@@ -64,8 +66,14 @@ export function buildApp() {
     })
   );
 
-  // Body limits (§10.2). JSON only.
-  app.use(express.json({ limit: "64kb" }));
+  // Body limits (§10.2). JSON only. Webhook routes mount their own
+  // express.raw() to preserve the signed body, so skip JSON parsing for
+  // that mount — otherwise req.body is consumed as parsed JSON before the
+  // webhook route's raw() can read the bytes.
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/v1/webhooks/")) return next();
+    return express.json({ limit: "64kb" })(req, res, next);
+  });
   app.use(cookieParser());
 
   // Health is public and does not require the proxy secret.
@@ -75,6 +83,7 @@ export function buildApp() {
   // go through the internal-proxy gate. Mount BEFORE the gate so the
   // provider talks to the API directly.
   app.use("/v1/webhooks", mediaWebhookRoutes);
+  app.use("/v1/webhooks", stripeWebhookRoutes);
 
   // Everything else must come through our Next.js rewrite layer (or an
   // explicit server-to-server caller with the shared secret).
@@ -97,6 +106,7 @@ export function buildApp() {
   app.use("/v1/projects", projectsRoutes);
   app.use("/v1/accomplishments", accomplishmentsRoutes);
   app.use("/v1/metrics", metricsRoutes);
+  app.use("/v1/finance", financeRoutes);
   app.use("/v1/public", publicPortalRoutes);
 
   // 404

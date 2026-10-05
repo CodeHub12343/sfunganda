@@ -186,6 +186,16 @@ const handlers: Record<string, HandlerFn> = {
     await sendMail({ to: author.email, subject, html, text: `${subject}\n${note}\n${link}` });
   },
 
+  async "finance.integrity"() {
+    const { runIntegrity } = await import("@/services/integrity.js");
+    const r = await runIntegrity();
+    log.info({ ok: r.ok, reports: r.reports.length }, "finance.integrity.done");
+  },
+
+  async "finance.state_changed"(payload) {
+    log.info({ payload }, "finance.state_changed");
+  },
+
   async "cache.revalidate"(payload) {
     const tags = Array.isArray(payload.tags) ? (payload.tags as string[]) : [];
     const base = process.env.REVALIDATE_URL;

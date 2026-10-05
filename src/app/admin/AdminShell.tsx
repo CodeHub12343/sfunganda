@@ -93,6 +93,11 @@ const NAV: NavLink[] = [
     href: "/admin/projects",
     roles: ["founder", "director", "project_manager"],
   },
+  {
+    label: "Finance",
+    href: "/admin/finance",
+    roles: ["founder", "director", "finance_manager"],
+  },
 ];
 
 type Me = {

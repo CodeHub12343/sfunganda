@@ -72,6 +72,15 @@ const EnvSchema = z.object({
   // gateway. Required in production; stubbed in dev when unset.
   MALWARE_SCANNER_URL: z.string().url().optional(),
   MALWARE_SCANNER_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+
+  // ---- Finance (Phase 4) ----------------------------------------------------
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  // Seed for the ledger hash chain. If unset in dev, a static value is used
+  // so repeated test runs produce deterministic chains.
+  LEDGER_HASH_SEED: z.string().min(16).default("sfu-ledger-dev-seed-0000000000000"),
+  // Base currency for the organization. Transactions in other currencies are
+  // stored with their original amount AND an FX-converted base amount.
+  BASE_CURRENCY: z.string().length(3).default("USD"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

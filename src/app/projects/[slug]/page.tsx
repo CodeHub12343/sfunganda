@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { api, ApiClientError } from "@/lib/api";
+import { FundingBlock } from "@/components/ui/FundingBlock";
 
 type Project = {
   slug: string;
@@ -86,6 +87,8 @@ export default async function ProjectDetail({
 
       <p style={{ fontSize: "1.1rem" }}>{project.summary}</p>
       {project.description ? <p>{project.description}</p> : null}
+
+      <FundingBlock projectSlug={project.slug} />
 
       <section aria-label="Milestones" style={{ marginTop: "2rem" }}>
         <h2>Milestones</h2>

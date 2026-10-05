@@ -9,6 +9,7 @@ import {
   listPublicProjects,
   publicImpact,
 } from "@/services/publicRead.js";
+import { publicFinanceSummary, publicProjectFunding } from "@/services/publicFinance.js";
 
 const router = Router();
 
@@ -85,6 +86,28 @@ router.get(
     const data = await publicImpact();
     withCache(res, data.cache_tags);
     res.json({ data: { totals: data.totals, metrics: data.metrics } });
+  })
+);
+
+router.get(
+  "/finance",
+  asyncHandler(async (_req, res) => {
+    const data = await publicFinanceSummary();
+    withCache(res, ["public:finance", "public:transparency"]);
+    res.json({ data });
+  })
+);
+
+router.get(
+  "/finance/projects/:slug",
+  asyncHandler(async (req, res) => {
+    const data = await publicProjectFunding(req.params.slug);
+    if (!data) {
+      res.status(404).json({ error: { code: "not_found", message: "not found" } });
+      return;
+    }
+    withCache(res, ["public:finance", `public:finance:project:${req.params.slug}`]);
+    res.json({ data });
   })
 );
 

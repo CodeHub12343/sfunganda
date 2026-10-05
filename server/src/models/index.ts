@@ -30,3 +30,25 @@ export { MetricDefinition } from "./MetricDefinition.js";
 export type { MetricDefinitionDoc, MetricAggregate } from "./MetricDefinition.js";
 export { MetricEntry } from "./MetricEntry.js";
 export type { MetricEntryDoc } from "./MetricEntry.js";
+export { Fund } from "./Fund.js";
+export type { FundDoc, FundKind } from "./Fund.js";
+export { FinancialTransaction } from "./FinancialTransaction.js";
+export type {
+  FinancialTransactionDoc,
+  TransactionKind,
+  TransactionState,
+  TransactionLine,
+  LineSide,
+} from "./FinancialTransaction.js";
+export { LedgerEntry } from "./LedgerEntry.js";
+export type { LedgerEntryDoc, LedgerSide } from "./LedgerEntry.js";
+export { ExpenseCategory } from "./ExpenseCategory.js";
+export type { ExpenseCategoryDoc } from "./ExpenseCategory.js";
+export { FinancialDocument } from "./FinancialDocument.js";
+export type { FinancialDocumentDoc, FinancialDocumentKind } from "./FinancialDocument.js";
+export { Donation } from "./Donation.js";
+export type { DonationDoc, DonationStatus } from "./Donation.js";
+export { StripeEvent } from "./StripeEvent.js";
+export type { StripeEventDoc } from "./StripeEvent.js";
+export { IntegrityReport } from "./IntegrityReport.js";
+export type { IntegrityReportDoc } from "./IntegrityReport.js";
