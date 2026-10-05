@@ -1,0 +1,18 @@
+# Baseline gitleaks config. The default ruleset covers Stripe keys, Resend
+# tokens, AWS creds, generic secrets, and private keys — all of the material
+# this project touches. The allowlist below prevents false positives against
+# well-known public dummy keys used in tests and docs.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-safe test placeholders"
+regexes = [
+  '''sk_test_dummy''',
+  '''sk_test_dummy_ci''',
+]
+paths = [
+  '''package-lock\.json''',
+  '''\.next/''',
+]

@@ -143,7 +143,7 @@ export function Transparency() {
         <Reveal delay={0.15}>
           <Docs>
             {transparencyDocs.map((d) => (
-              <Doc key={d.title} href="#" whileTap={{ scale: 0.98 }}>
+              <Doc key={d.title} href={d.href} whileTap={{ scale: 0.98 }}>
                 <DocIcon>
                   <FileIcon />
                 </DocIcon>

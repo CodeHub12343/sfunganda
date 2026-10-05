@@ -1,0 +1,66 @@
+# ---------------------------------------------------------------------------
+# Local Phase 1 stack. Boots:
+#   • mongo       — a single-node replica set (so Mongoose transactions work)
+#   • mailpit     — SMTP sink for the mail worker (http://localhost:8025)
+#   • api         — the Express service
+#   • worker      — the outbox worker (same image, different CMD)
+#
+# Front end runs via `npm run dev` on the host at :3000 and talks to the API
+# through the Next.js rewrite layer. In production, each service runs on its
+# own always-on Node host behind Cloudflare.
+# ---------------------------------------------------------------------------
+
+services:
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: >
+        mongosh --quiet --eval "try { rs.status().ok } catch(e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'mongo:27017'}]}).ok }"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - mongodata:/data/db
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  api:
+    build:
+      context: ./server
+    env_file: ./server/.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/sfuganda?replicaSet=rs0
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_SECURE: "false"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    ports:
+      - "4000:4000"
+
+  worker:
+    build:
+      context: ./server
+    env_file: ./server/.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/sfuganda?replicaSet=rs0
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_SECURE: "false"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: ["node", "dist/worker/index.js"]
+
+volumes:
+  mongodata:

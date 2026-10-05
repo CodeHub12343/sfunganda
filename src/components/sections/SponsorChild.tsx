@@ -261,15 +261,21 @@ export function SponsorChild() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/checkout", {
+      const res = await fetch("/api/v1/donations/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ amount, monthly }),
       });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Could not start checkout.");
+      const payload = (await res.json()) as {
+        data?: { url?: string };
+        error?: { message?: string };
+      };
+      const url = payload.data?.url;
+      if (!res.ok || !url) {
+        throw new Error(payload.error?.message || "Could not start checkout.");
       }
+      const data = { url };
       // Hand off to Stripe's hosted, PCI-compliant Checkout page.
       window.location.href = data.url;
     } catch (err) {
@@ -284,12 +290,15 @@ export function SponsorChild() {
     return sorted.find((t) => amount >= t.amount) ?? sponsorTiers[0];
   }, [amount]);
 
+  // D9: no invented ratios ("meals for amount ÷ 2 children"). Each tier maps
+  // to a stakeholder-approved description of what the gift supports. Real
+  // per-dollar cost data replaces this in Phase 4 when the ledger is in place.
   const impactCopy = useMemo(() => {
-    if (amount >= 250) return "helps build a permanent family home, brick by brick.";
-    if (amount >= 100) return `funds full tuition, books, and mentorship for a sponsored student.`;
-    if (amount >= 50) return "provides medical care and a safe bed for a child all year.";
-    if (amount >= 25) return `delivers school supplies and meals for ${Math.max(1, Math.round(amount / 5))} children.`;
-    return `delivers meals for ${Math.max(1, Math.round(amount / 2))} children this month.`;
+    if (amount >= 250) return "helps build the permanent family home.";
+    if (amount >= 100) return "goes toward tuition, books, and school materials.";
+    if (amount >= 50) return "supports medical care and daily living for a child.";
+    if (amount >= 25) return "contributes to meals and school supplies.";
+    return "contributes to meals and daily care for the children.";
   }, [amount]);
 
   return (
@@ -305,23 +314,25 @@ export function SponsorChild() {
                 isn&apos;t a transaction — it&apos;s the start of someone&apos;s
                 future.
               </p>
-              <Toggle role="tablist" aria-label="Donation frequency">
+              <Toggle role="radiogroup" aria-label="Donation frequency">
                 <ToggleInner>
                   <Slider
                     animate={{ x: monthly ? 0 : "100%" }}
                     transition={{ type: "spring", stiffness: 400, damping: 32 }}
                   />
                   <ToggleBtn
-                    role="tab"
-                    aria-selected={monthly}
+                    type="button"
+                    role="radio"
+                    aria-checked={monthly}
                     $active={monthly}
                     onClick={() => setMonthly(true)}
                   >
                     Monthly
                   </ToggleBtn>
                   <ToggleBtn
-                    role="tab"
-                    aria-selected={!monthly}
+                    type="button"
+                    role="radio"
+                    aria-checked={!monthly}
                     $active={!monthly}
                     onClick={() => setMonthly(false)}
                   >
@@ -355,10 +366,12 @@ export function SponsorChild() {
                   id="custom-amount"
                   type="number"
                   min={1}
+                  step={0.01}
                   value={amount}
-                  onChange={(e) =>
-                    setAmount(Math.max(1, Number(e.target.value) || 0))
-                  }
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    setAmount(Number.isFinite(next) && next >= 1 ? next : 1);
+                  }}
                   aria-label="Custom donation amount in dollars"
                 />
               </CustomRow>
@@ -405,7 +418,7 @@ export function SponsorChild() {
               </Submit>
               {error && <ErrorNote role="alert">{error}</ErrorNote>}
               <Reassure>
-                🔒 Secure payment via Stripe · Cancel anytime · 100% to the children ·
+                🔒 Secure payment via Stripe · Cancel anytime ·
                 {" "}
                 <span style={{ whiteSpace: "nowrap" }}>{tier.title}</span>
               </Reassure>

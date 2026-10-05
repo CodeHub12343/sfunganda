@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import NextLink from "next/link";
 import styled from "styled-components";
 import { AnimatePresence, motion } from "framer-motion";
 import { Logo } from "@/components/ui/Logo";
@@ -46,12 +47,13 @@ const NavLinks = styled.nav`
   }
 `;
 
-const NavLink = styled.a`
+const NavLink = styled(NextLink)`
   font-size: 0.95rem;
   font-weight: ${({ theme }) => theme.weight.medium};
   color: ${({ theme }) => theme.colors.inkSoft};
   position: relative;
   transition: color 0.2s;
+  text-decoration: none;
   &::after {
     content: "";
     position: absolute;
@@ -63,11 +65,18 @@ const NavLink = styled.a`
     background: ${({ theme }) => theme.gradients.sunrise};
     transition: width 0.3s ${({ theme }) => theme.ease.out};
   }
-  &:hover {
+  &:hover,
+  &:focus-visible {
     color: ${({ theme }) => theme.colors.trustBlue};
   }
-  &:hover::after {
+  &:hover::after,
+  &:focus-visible::after {
     width: 100%;
+  }
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.sunriseOrange};
+    outline-offset: 6px;
+    border-radius: 4px;
   }
 `;
 
@@ -91,8 +100,14 @@ const Burger = styled.button`
   height: 48px;
   border-radius: ${({ theme }) => theme.radius.pill};
   background: ${({ theme }) => theme.colors.trustBlue};
+  border: none;
+  cursor: pointer;
   ${media.lg} {
     display: none;
+  }
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.sunriseOrange};
+    outline-offset: 3px;
   }
   span,
   span::before,
@@ -139,6 +154,12 @@ const Close = styled.button`
   color: #fff;
   border-radius: ${({ theme }) => theme.radius.pill};
   background: rgba(255, 255, 255, 0.12);
+  border: none;
+  cursor: pointer;
+  &:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 3px;
+  }
 `;
 
 const SheetLinks = styled.nav`
@@ -149,16 +170,25 @@ const SheetLinks = styled.nav`
   margin-bottom: auto;
 `;
 
-const SheetLink = styled(motion.a)`
+const SheetLink = styled(motion(NextLink))`
   font-family: ${({ theme }) => theme.font.heading};
   font-size: clamp(2rem, 9vw, 3rem);
   font-weight: ${({ theme }) => theme.weight.bold};
   color: #fff;
+  text-decoration: none;
+  &:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
 `;
 
+// T6/T14: route-aware links, focus trap, Escape to close, aria-modal on sheet.
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const openerRef = useRef<HTMLButtonElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -167,12 +197,55 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Lock body scroll while the sheet is open.
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  // Focus management + Escape handling for the mobile sheet.
+  useEffect(() => {
+    if (!open) return;
+
+    const first = sheetRef.current?.querySelector<HTMLElement>(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    first?.focus();
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (e.key !== "Tab" || !sheetRef.current) return;
+      const focusables = Array.from(
+        sheetRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute("hidden"));
+      if (focusables.length === 0) return;
+      const firstEl = focusables[0];
+      const lastEl = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === firstEl) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && document.activeElement === lastEl) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    openerRef.current?.focus();
+  }, []);
 
   return (
     <>
@@ -188,11 +261,17 @@ export function Navbar() {
           </NavLinks>
           <Right>
             <DesktopCta>
-              <Button href="#sponsor" variant="primary">
+              <Button href="/#sponsor" variant="primary">
                 Donate
               </Button>
             </DesktopCta>
-            <Burger aria-label="Open menu" onClick={() => setOpen(true)}>
+            <Burger
+              ref={openerRef}
+              aria-label="Open menu"
+              aria-expanded={open}
+              aria-controls="mobile-nav"
+              onClick={() => setOpen(true)}
+            >
               <span />
             </Burger>
           </Right>
@@ -202,6 +281,11 @@ export function Navbar() {
       <AnimatePresence>
         {open && (
           <Sheet
+            id="mobile-nav"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Site menu"
+            ref={sheetRef}
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
@@ -209,7 +293,7 @@ export function Navbar() {
           >
             <SheetTop>
               <Logo onDark />
-              <Close aria-label="Close menu" onClick={() => setOpen(false)}>
+              <Close aria-label="Close menu" onClick={close}>
                 ✕
               </Close>
             </SheetTop>
@@ -218,7 +302,7 @@ export function Navbar() {
                 <SheetLink
                   key={n.href}
                   href={n.href}
-                  onClick={() => setOpen(false)}
+                  onClick={close}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.08 * i + 0.1 }}
@@ -227,7 +311,7 @@ export function Navbar() {
                 </SheetLink>
               ))}
             </SheetLinks>
-            <Button href="#sponsor" variant="light" full onClick={() => setOpen(false)}>
+            <Button href="/#sponsor" variant="light" full>
               Donate Now
             </Button>
           </Sheet>

@@ -285,20 +285,28 @@ export function Volunteer() {
 
     setStatus("submitting");
     try {
-      const res = await fetch("/api/volunteer", {
+      const res = await fetch("/api/v1/volunteers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
-          fullName,
+          full_name: fullName,
           email,
-          phone: phone || undefined,
+          phone: phone || null,
           country,
-          cityRegion,
+          city_region: cityRegion,
           tasks,
           address: needsAddress
-            ? { line1, line2: line2 || undefined, city, stateProvince, postalCode, country }
-            : undefined,
-          note: note || undefined,
+            ? {
+                line1,
+                line2: line2 || null,
+                city,
+                state_province: stateProvince || null,
+                postal_code: postalCode,
+                country,
+              }
+            : null,
+          note: note || null,
           consent,
           website, // honeypot
           source: "website",

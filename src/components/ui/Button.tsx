@@ -1,5 +1,6 @@
 "use client";
 
+import NextLink from "next/link";
 import styled, { css } from "styled-components";
 import { motion } from "framer-motion";
 
@@ -28,6 +29,16 @@ const base = css`
     box-shadow 0.3s ${({ theme }) => theme.ease.out},
     background 0.3s ${({ theme }) => theme.ease.out},
     color 0.3s ${({ theme }) => theme.ease.out};
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.sunriseOrange};
+    outline-offset: 3px;
+  }
+  &[aria-disabled="true"],
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
 `;
 
 const variants: Record<Variant, ReturnType<typeof css>> = {
@@ -69,7 +80,7 @@ const variants: Record<Variant, ReturnType<typeof css>> = {
   `,
 };
 
-const StyledButton = styled(motion.a)<{ $variant: Variant; $full?: boolean }>`
+const styleBlock = css<{ $variant: Variant; $full?: boolean }>`
   ${base}
   ${({ $variant }) => variants[$variant]}
   ${({ $full }) =>
@@ -79,30 +90,97 @@ const StyledButton = styled(motion.a)<{ $variant: Variant; $full?: boolean }>`
     `}
 `;
 
-type ButtonProps = {
+const StyledAnchor = styled(motion.a)<{ $variant: Variant; $full?: boolean }>`
+  ${styleBlock}
+`;
+const StyledLink = styled(NextLink)<{ $variant: Variant; $full?: boolean }>`
+  ${styleBlock}
+`;
+const StyledButton = styled(motion.button)<{ $variant: Variant; $full?: boolean }>`
+  ${styleBlock}
+  border: none;
+  font: inherit;
+`;
+
+type CommonProps = {
   children: React.ReactNode;
-  href?: string;
   variant?: Variant;
   full?: boolean;
-  onClick?: () => void;
-} & React.ComponentProps<typeof motion.a>;
+  loading?: boolean;
+};
 
-export function Button({
-  children,
-  href = "#",
-  variant = "primary",
-  full,
-  ...rest
-}: ButtonProps) {
+type AsLink = CommonProps & {
+  href: string;
+  onClick?: never;
+  disabled?: never;
+  type?: never;
+  target?: string;
+  rel?: string;
+};
+
+type AsButton = CommonProps & {
+  href?: undefined;
+  onClick?: () => void;
+  disabled?: boolean;
+  type?: "button" | "submit" | "reset";
+};
+
+export type ButtonProps = AsLink | AsButton;
+
+// Route-aware primitive (T6). An external or `mailto:` href renders as an
+// anchor; an internal route uses `next/link` for client-side navigation; no
+// href renders a real `<button>`. `loading` and `disabled` are honoured for
+// each form.
+export function Button(props: ButtonProps) {
+  const { children, variant = "primary", full, loading, ...rest } = props;
+  const motionProps = {
+    whileHover: loading ? undefined : { y: -3 },
+    whileTap: loading ? undefined : { scale: 0.97, y: -1 },
+    transition: { type: "spring" as const, stiffness: 400, damping: 22 },
+  };
+
+  if ("href" in rest && rest.href !== undefined) {
+    const { href, target, rel } = rest;
+    const isExternal =
+      /^(https?:|mailto:|tel:)/i.test(href) || href.startsWith("//");
+    const isHash = href.startsWith("#");
+    if (isExternal || isHash) {
+      return (
+        <StyledAnchor
+          href={href}
+          target={target}
+          rel={rel ?? (isExternal && target === "_blank" ? "noopener noreferrer" : undefined)}
+          aria-disabled={loading || undefined}
+          $variant={variant}
+          $full={full}
+          {...motionProps}
+        >
+          {children}
+        </StyledAnchor>
+      );
+    }
+    return (
+      <StyledLink
+        href={href}
+        aria-disabled={loading || undefined}
+        $variant={variant}
+        $full={full}
+      >
+        {children}
+      </StyledLink>
+    );
+  }
+
+  const { onClick, disabled, type = "button" } = rest as AsButton;
   return (
     <StyledButton
-      href={href}
+      type={type}
+      onClick={onClick}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       $variant={variant}
       $full={full}
-      whileHover={{ y: -3 }}
-      whileTap={{ scale: 0.97, y: -1 }}
-      transition={{ type: "spring", stiffness: 400, damping: 22 }}
-      {...rest}
+      {...motionProps}
     >
       {children}
     </StyledButton>

@@ -5,6 +5,10 @@ import styled from "styled-components";
 import { AnimatePresence, motion } from "framer-motion";
 import { media } from "@/styles/theme";
 
+// D7: the hardcoded 45% progress bar is removed. Until a verified funding
+// ledger backs it (Phase 4), the sticky bar shows a plain donation CTA with
+// no implied progress number.
+
 const Bar = styled(motion.div)`
   position: fixed;
   z-index: ${({ theme }) => theme.z.sticky};
@@ -41,25 +45,6 @@ const Copy = styled.div`
     font-size: 0.8rem;
     color: ${({ theme }) => theme.colors.inkMuted};
   }
-`;
-
-const Track = styled.div`
-  display: none;
-  ${media.md} {
-    display: block;
-    height: 6px;
-    width: 120px;
-    border-radius: 999px;
-    background: ${({ theme }) => theme.colors.border};
-    overflow: hidden;
-    margin-right: 0.25rem;
-  }
-`;
-
-const Fill = styled(motion.div)`
-  height: 100%;
-  border-radius: 999px;
-  background: ${({ theme }) => theme.gradients.sunrise};
 `;
 
 const Donate = styled.a`
@@ -107,14 +92,7 @@ export function StickyDonate() {
             <strong>Help build their home</strong>
             <span>Every gift brings the children closer</span>
           </Copy>
-          <Track aria-hidden>
-            <Fill
-              initial={{ width: 0 }}
-              animate={{ width: "45%" }}
-              transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-            />
-          </Track>
-          <Donate href="#sponsor">Donate Now →</Donate>
+          <Donate href="/#sponsor">Donate Now →</Donate>
         </Bar>
       )}
     </AnimatePresence>

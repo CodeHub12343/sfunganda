@@ -1,10 +1,26 @@
 "use client";
 
+import NextLink from "next/link";
 import styled from "styled-components";
 import { Container } from "@/components/ui/Container";
 import { Logo } from "@/components/ui/Logo";
 import { footer, brand } from "@/data/content";
 import { media } from "@/styles/theme";
+
+function FooterLinkEl({ href, label }: { href: string; label: string }) {
+  // External and mailto/tel links must render as a plain anchor; internal
+  // routes use next/link.
+  const isExternal = /^(https?:|mailto:|tel:)/i.test(href) || href.startsWith("//");
+  if (isExternal) {
+    const external = /^https?:\/\//i.test(href);
+    return (
+      <a href={href} rel={external ? "noopener noreferrer" : undefined} target={external ? "_blank" : undefined}>
+        {label}
+      </a>
+    );
+  }
+  return <NextLink href={href}>{label}</NextLink>;
+}
 
 const Wrap = styled.footer`
   background: ${({ theme }) => theme.colors.bgDark};
@@ -63,8 +79,15 @@ const Col = styled.div`
     color: ${({ theme }) => theme.colors.onDarkSoft};
     font-size: 0.95rem;
     transition: color 0.2s;
-    &:hover {
+    text-decoration: none;
+    &:hover,
+    &:focus-visible {
       color: ${({ theme }) => theme.colors.hopeGold};
+    }
+    &:focus-visible {
+      outline: 2px solid ${({ theme }) => theme.colors.hopeGold};
+      outline-offset: 3px;
+      border-radius: 2px;
     }
   }
 `;
@@ -108,8 +131,8 @@ export function Footer() {
               <h4>{col.title}</h4>
               <ul>
                 {col.links.map((l) => (
-                  <li key={l}>
-                    <a href="#">{l}</a>
+                  <li key={l.href}>
+                    <FooterLinkEl href={l.href} label={l.label} />
                   </li>
                 ))}
               </ul>

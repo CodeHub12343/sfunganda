@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/Button";
 import { orphanages } from "@/data/content";
 import { media } from "@/styles/theme";
 
+// D7: the "raised" totals and progress bars are intentionally absent until a
+// verified ledger backs them (Phase 4). Cards show only the planned funding
+// goal, which stakeholders have approved for public display.
+
 const Head = styled.div`
   max-width: 720px;
   margin-bottom: 3.5rem;
@@ -120,20 +124,6 @@ const ProgressMeta = styled.div`
   }
 `;
 
-const Track = styled.div`
-  height: 8px;
-  border-radius: 999px;
-  background: ${({ theme }) => theme.colors.bgSoft};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  overflow: hidden;
-`;
-
-const Fill = styled(motion.div)`
-  height: 100%;
-  border-radius: 999px;
-  background: ${({ theme }) => theme.gradients.growth};
-`;
-
 const Foot = styled.div`
   margin-top: 1.5rem;
 `;
@@ -154,39 +144,28 @@ export function OrphanageHub() {
         </Head>
 
         <Grid>
-          {orphanages.map((o) => {
-            const pct = Math.min(100, Math.round((o.raised / o.goal) * 100));
-            return (
-              <Card key={o.id} variants={revealItem} whileHover={{ y: -6 }}>
-                <Cover $src={o.image.src} $position={o.image.position}>
-                  <Location>
-                    <Pin /> {o.location}
-                  </Location>
-                </Cover>
-                <Body>
-                  <Name>{o.name}</Name>
-                  <Story>{o.story}</Story>
-                  <ProgressMeta>
-                    <strong>${o.raised.toLocaleString()}</strong>
-                    <span>of ${o.goal.toLocaleString()} · {o.children} children</span>
-                  </ProgressMeta>
-                  <Track>
-                    <Fill
-                      initial={{ width: 0 }}
-                      whileInView={{ width: `${pct}%` }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                    />
-                  </Track>
-                  <Foot>
-                    <Button href="#sponsor" variant="ghost" full>
-                      Support {o.name.split(" ")[0]}
-                    </Button>
-                  </Foot>
-                </Body>
-              </Card>
-            );
-          })}
+          {orphanages.map((o) => (
+            <Card key={o.id} variants={revealItem} whileHover={{ y: -6 }}>
+              <Cover $src={o.image.src} $position={o.image.position}>
+                <Location>
+                  <Pin /> {o.location}
+                </Location>
+              </Cover>
+              <Body>
+                <Name>{o.name}</Name>
+                <Story>{o.story}</Story>
+                <ProgressMeta>
+                  <strong>Goal: ${o.goal.toLocaleString()}</strong>
+                  <span>{o.children} children in care</span>
+                </ProgressMeta>
+                <Foot>
+                  <Button href="/#sponsor" variant="ghost" full>
+                    Support {o.name.split(" ")[0]}
+                  </Button>
+                </Foot>
+              </Body>
+            </Card>
+          ))}
         </Grid>
       </Container>
     </Section>

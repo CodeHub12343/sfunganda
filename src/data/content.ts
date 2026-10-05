@@ -34,13 +34,15 @@ export const partners = {
   ],
 };
 
+// Route-aware navigation. All targets are either in-page anchors on `/` or
+// real routes — never dead `#` links (T6).
 export const nav = [
-  { label: "Our Story", href: "#story" },
-  { label: "What We Need", href: "#impact" },
-  { label: "Donate", href: "#sponsor" },
-  { label: "Volunteer", href: "#volunteer" },
-  { label: "Transparency", href: "#transparency" },
-  { label: "Stories", href: "#stories" },
+  { label: "Our Story", href: "/#story" },
+  { label: "What We Need", href: "/#impact" },
+  { label: "Donate", href: "/#sponsor" },
+  { label: "Volunteer", href: "/#volunteer" },
+  { label: "Transparency", href: "/#transparency" },
+  { label: "Stories", href: "/#stories" },
 ] as const;
 
 export const hero = {
@@ -48,8 +50,8 @@ export const hero = {
   headline: ["Every child deserves", "hope, safety, and a", "place to call home."],
   subhead:
     "Sarah's Foundation Uganda has been a safe haven for vulnerable children since 2016. Today, in partnership with Honest Need, we provide food, education, healthcare, and love to more than 30 children — and we're building them a permanent home.",
-  primaryCta: { label: "Donate Now", href: "#sponsor" },
-  secondaryCta: { label: "Read Their Story", href: "#story" },
+  primaryCta: { label: "Donate Now", href: "/#sponsor" },
+  secondaryCta: { label: "Read Their Story", href: "/#story" },
   floatingStats: [
     { value: 30, label: "Children cared for" },
     { value: 2016, label: "Caring since" },
@@ -205,19 +207,6 @@ export const regions: Region[] = [
   },
 ];
 
-export type Story = {
-  id: string;
-  name: string;
-  age: number;
-  region: string;
-  before: string;
-  after: string;
-  quote: string;
-  tag: string;
-  tone: "gold" | "green" | "blue";
-  image: ImageAsset;
-};
-
 export type ImageAsset = {
   src: string;
   alt: string;
@@ -226,61 +215,46 @@ export type ImageAsset = {
   position?: string;
 };
 
-// Privacy-safe representative journeys reflecting the children of Sarah's Foundation Uganda.
-export const featuredStories: Story[] = [
+export type ProgrammeStory = {
+  id: string;
+  title: string;
+  summary: string;
+  body: string;
+  tag: string;
+  tone: "gold" | "green" | "blue";
+};
+
+// D10: no stock photographs of identifiable children paired with invented
+// names, ages, or first-person quotes. These are programme-level descriptions
+// of the work Sarah's Foundation does in Uganda. Real stories, with verified
+// consent and non-identifying imagery, replace this in Phase 3.
+export const featuredStories: ProgrammeStory[] = [
   {
-    id: "amara",
-    name: "Amara",
-    age: 9,
-    region: "Sarah's Foundation · Uganda",
-    before: "Sleeping rough after losing both parents, with no one to turn to.",
-    after: "Top of her class, fed, safe, and dreaming of becoming a nurse.",
-    quote: "Now I have a bed, a book, and people who call me theirs.",
+    id: "care",
+    title: "Daily care & protection",
+    summary:
+      "Every day, more than thirty children receive food, healthcare, and a safe place to sleep.",
+    body: "Three meals a day, medical care when it's needed, counselling, and a loving household — the foundation of everything else we do.",
     tag: "Care & Protection",
     tone: "gold",
-    image: {
-      src: "https://images.unsplash.com/photo-1536337005238-94b997371b40?auto=format&fit=crop&w=1400&q=82",
-      alt: "A child smiling while holding schoolwork in a classroom",
-      credit: "Ben White",
-      source: "https://unsplash.com/s/photos/african-school-children",
-      position: "50% 34%",
-    },
   },
   {
-    id: "kofi",
-    name: "Kofi & his sisters",
-    age: 12,
-    region: "Sarah's Foundation · Uganda",
-    before: "Three siblings facing hunger and the risk of being separated.",
-    after: "Living together again, cared for and supported by donors like you.",
-    quote: "We are still a family. That is everything.",
+    id: "siblings",
+    title: "Keeping siblings together",
+    summary:
+      "When a family is on the brink of separation, we work to keep brothers and sisters under the same roof.",
+    body: "Sibling bonds are often all a child has left. Our programme prioritises keeping siblings together — a decision that shapes the rest of their lives.",
     tag: "A Permanent Home",
     tone: "green",
-    image: {
-      src: "https://images.unsplash.com/photo-1521493959102-bdd6677fdd81?auto=format&fit=crop&w=1400&q=82",
-      alt: "Children gathered together by a window",
-      credit: "bill wegener",
-      source: "https://unsplash.com/s/photos/african-school-children",
-      position: "50% 42%",
-    },
   },
   {
-    id: "zola",
-    name: "Zola",
-    age: 15,
-    region: "Sarah's Foundation · Uganda",
-    before: "Pulled out of school by poverty, with no way to keep learning.",
-    after: "Back in class on full support, mentoring the younger children.",
-    quote: "Someone believed in me. Now I get to believe in others.",
+    id: "education",
+    title: "School, every term",
+    summary:
+      "Tuition, books, uniforms, and the mentoring that keeps a child learning.",
+    body: "Education is where the cycle of poverty breaks. We cover fees and materials, and pair each student with a mentor — including older children who were sponsored themselves.",
     tag: "Education & Skills",
     tone: "blue",
-    image: {
-      src: "https://images.unsplash.com/photo-1473649085228-583485e6e4d7?auto=format&fit=crop&w=1400&q=82",
-      alt: "Students sitting together in a classroom",
-      credit: "Doug Linstedt",
-      source: "https://unsplash.com/s/photos/african-school-children",
-      position: "50% 46%",
-    },
   },
 ];
 
@@ -290,7 +264,8 @@ export type Orphanage = {
   location: string;
   story: string;
   children: number;
-  raised: number;
+  // D7: no `raised` figure until it is backed by a verified ledger (Phase 4).
+  // `goal` is the planned, stakeholder-approved funding target only.
   goal: number;
   image: ImageAsset;
 };
@@ -304,7 +279,6 @@ export const orphanages: Orphanage[] = [
     story:
       "Legal registration, documentation, and compliance — so we can expand partnerships, increase transparency, and open doors for future support.",
     children: 30,
-    raised: 150,
     goal: 1000,
     image: {
       src: "https://images.unsplash.com/photo-1606607299522-14b35fc4679c?auto=format&fit=crop&w=1400&q=82",
@@ -321,7 +295,6 @@ export const orphanages: Orphanage[] = [
     story:
       "Buying land and securing housing to give the children a safe, stable forever-home where they can grow and flourish.",
     children: 30,
-    raised: 1800,
     goal: 15000,
     image: {
       src: "https://images.unsplash.com/photo-1548102249-acdce64fffbd?auto=format&fit=crop&w=1400&q=82",
@@ -338,7 +311,6 @@ export const orphanages: Orphanage[] = [
     story:
       "Food, school fees, medical care, clothing, and everyday essentials for more than 30 children throughout the year.",
     children: 30,
-    raised: 2400,
     goal: 9000,
     image: {
       src: "https://images.unsplash.com/photo-1705475388190-775066fd69a5?auto=format&fit=crop&w=1400&q=82",
@@ -387,18 +359,24 @@ export type TransparencyItem = {
   note: string;
 };
 
+// D8: "100% to the children" is removed pending Q4 — until the public finance
+// projection is in place, we don't publish percentages we can't substantiate.
 export const transparency: TransparencyItem[] = [
-  { label: "To the children", value: "100%", note: "every gift goes straight to food, care, and shelter." },
+  { label: "Children today", value: "30+", note: "receiving food, care, and schooling every day." },
   { label: "Caring since", value: "2016", note: "nearly a decade of consistent, loving care." },
   { label: "Registration goal", value: "$1,000", note: "our next step toward full legal compliance." },
-  { label: "Children today", value: "30+", note: "and building toward a home for 40+." },
+  { label: "Permanent home goal", value: "$15,000", note: "land and a forever-home for 40+ children." },
 ];
 
-export const transparencyDocs = [
-  { title: "Our Story & Mission", meta: "Who we are & why" },
-  { title: "Funding Goals", meta: "Where every gift goes" },
-  { title: "Registration Roadmap", meta: "Toward legal compliance" },
-  { title: "Sustainability Plan", meta: "Farming & small business" },
+// D11: documents gain real anchors. Each `href` resolves to a published page
+// or an in-page anchor on the home route — never `#`.
+export type TransparencyDoc = { title: string; meta: string; href: string };
+
+export const transparencyDocs: TransparencyDoc[] = [
+  { title: "Our Story & Mission", meta: "Who we are & why", href: "/#story" },
+  { title: "Funding Goals", meta: "Where every gift goes", href: "/#impact" },
+  { title: "Safeguarding Policy", meta: "How we protect every child", href: "/safeguarding" },
+  { title: "Privacy & Terms", meta: "How we handle your data", href: "/privacy" },
 ];
 
 export type Testimonial = {
@@ -440,8 +418,8 @@ export const finalCta = {
   eyebrow: "Join the movement",
   title: "Together we can build a future.",
   body: "You're not just giving — you're helping build a safe, permanent, loving home for vulnerable children in Uganda. Together we can provide hope, create opportunity, and change lives for generations.",
-  primary: { label: "Donate Now", href: "#sponsor" },
-  secondary: { label: "Read Their Story", href: "#story" },
+  primary: { label: "Donate Now", href: "/#sponsor" },
+  secondary: { label: "Read Their Story", href: "/#story" },
 };
 
 // =============================================================================
@@ -517,21 +495,44 @@ export const volunteer = {
   successShareLabel: "Share now:",
 };
 
-export const footer = {
+// D11: every link resolves to a real destination — either an in-page anchor
+// on `/` or a published route — never `#`.
+export type FooterLink = { label: string; href: string };
+export type FooterColumn = { title: string; links: FooterLink[] };
+
+export const footer: {
+  blurb: string;
+  columns: FooterColumn[];
+  contact: { email: string; phone: string };
+} = {
   blurb:
     "Sarah's Foundation Uganda provides hope, home, and opportunity to vulnerable children — in partnership with Honest Need.",
   columns: [
     {
       title: "Foundation",
-      links: ["Our Story", "What We Need", "The Partnership", "Sustainability"],
+      links: [
+        { label: "Our Story", href: "/#story" },
+        { label: "What We Need", href: "/#impact" },
+        { label: "Stories", href: "/#stories" },
+        { label: "Transparency", href: "/#transparency" },
+      ],
     },
     {
       title: "Get Involved",
-      links: ["Donate", "Sponsor a Child", "Partner With Us", "Share Our Story"],
+      links: [
+        { label: "Donate", href: "/#sponsor" },
+        { label: "Volunteer", href: "/#volunteer" },
+        { label: "Share our story", href: "/#stories" },
+      ],
     },
     {
       title: "Trust",
-      links: ["Transparency", "Funding Goals", "Registration", "Contact"],
+      links: [
+        { label: "Privacy policy", href: "/privacy" },
+        { label: "Terms of use", href: "/terms" },
+        { label: "Safeguarding", href: "/safeguarding" },
+        { label: "Contact", href: "mailto:hello@honestneed.com" },
+      ],
     },
   ],
   contact: { email: "hello@honestneed.com", phone: "Honest Need · HonestNeed.com" },

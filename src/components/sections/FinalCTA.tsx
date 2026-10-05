@@ -121,7 +121,7 @@ export function FinalCTA() {
           </Reveal>
           <Pillars>
             <span>
-              <b>100%</b> to the children
+              Caring for 30+ children <b>since 2016</b>
             </span>
             <span>
               In partnership with <b>Honest Need</b>
