@@ -196,6 +196,101 @@ const handlers: Record<string, HandlerFn> = {
     log.info({ payload }, "finance.state_changed");
   },
 
+  async "email.send_template"(payload, ctx) {
+    // Enqueues an EmailDelivery (idempotent) and fires immediate send. The
+    // scan_queue path handles bulk fan-out; this one services small, latency-
+    // sensitive paths (signup verification, receipts).
+    const { EmailDelivery } = await import("@/models/index.js");
+    const to = String(payload.to ?? "");
+    const template = String(payload.template ?? "");
+    const data = (payload.data ?? {}) as Record<string, unknown>;
+    const idempotency_key = String(payload.idempotency_key ?? `${template}-${to}-${Date.now()}`);
+    const subject = subjectFor(template, data);
+    const orgId = ctx.organization_id;
+    const user_id = payload.user_id ? new mongoose.Types.ObjectId(String(payload.user_id)) : null;
+    try {
+      await EmailDelivery.create({
+        organization_id: orgId,
+        user_id,
+        to_email: to.toLowerCase(),
+        template,
+        idempotency_key,
+        subject,
+        payload: data,
+        status: "queued",
+        attempts: 1,
+      });
+    } catch (err) {
+      if ((err as { code?: number }).code !== 11000) throw err;
+      // Already queued — a replay. Fall through and try sending again.
+    }
+    const { sendTemplatedEmail } = await import("@/services/emailSender.js");
+    try {
+      const providerId = await sendTemplatedEmail({ to, subject, template, payload: data });
+      await EmailDelivery.updateOne(
+        { organization_id: orgId, idempotency_key },
+        { $set: { status: "sent", sent_at: new Date(), provider_message_id: providerId, error_message: null } }
+      );
+    } catch (err) {
+      await EmailDelivery.updateOne(
+        { organization_id: orgId, idempotency_key },
+        { $set: { status: "queued", error_message: (err as Error).message } }
+      );
+      throw err;
+    }
+  },
+
+  async "notification.fanout_accomplishment_published"(payload, ctx) {
+    const { fanoutAccomplishmentPublished } = await import("@/services/notifications.js");
+    const r = await fanoutAccomplishmentPublished({
+      organization_id: ctx.organization_id.toString(),
+      accomplishment_id: String(payload.accomplishment_id ?? ""),
+    });
+    log.info(r, "notification.fanout.done");
+  },
+
+  async "email.scan_queue"(payload) {
+    // Scan the queue for ready-to-send emails. Lease them with
+    // findOneAndUpdate so a sibling worker never claims the same row.
+    const { EmailDelivery, Organization } = await import("@/models/index.js");
+    const { sendTemplatedEmail } = await import("@/services/emailSender.js");
+    const now = new Date();
+    const MAX_PER_TICK = 50;
+    let sent = 0;
+    while (sent < MAX_PER_TICK) {
+      const row = await EmailDelivery.findOneAndUpdate(
+        { status: "queued" },
+        { $set: { status: "sending", updated_at: now }, $inc: { attempts: 1 } },
+        { new: true, sort: { created_at: 1 } }
+      );
+      if (!row) break;
+      const orgCount = await Organization.countDocuments();
+      try {
+        const providerId = await sendTemplatedEmail({
+          to: row.to_email,
+          subject: row.subject,
+          template: row.template,
+          payload: row.payload as Record<string, unknown>,
+        });
+        await EmailDelivery.updateOne(
+          { _id: row._id },
+          { $set: { status: "sent", sent_at: new Date(), provider_message_id: providerId, error_message: null } }
+        );
+        sent++;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "unknown";
+        const nextStatus = row.attempts >= 5 ? "failed" : "queued";
+        await EmailDelivery.updateOne(
+          { _id: row._id },
+          { $set: { status: nextStatus, error_message: msg } }
+        );
+      }
+      void orgCount; // keep import live
+      void payload;
+    }
+    log.info({ sent }, "email.scan.done");
+  },
+
   async "cache.revalidate"(payload) {
     const tags = Array.isArray(payload.tags) ? (payload.tags as string[]) : [];
     const base = process.env.REVALIDATE_URL;
@@ -217,6 +312,21 @@ const handlers: Record<string, HandlerFn> = {
     }
   },
 };
+
+function subjectFor(template: string, data: Record<string, unknown>): string {
+  switch (template) {
+    case "supporter_verify":
+      return "Confirm your email — Sarah's Foundation";
+    case "supporter_already_registered":
+      return "You already have a Sarah's Foundation account";
+    case "accomplishment_published":
+      return `${String(data.project_name ?? "Sarah's Foundation")}: ${String(data.accomplishment_title ?? "A new update")}`;
+    case "donation_receipt":
+      return `Thank you for your donation (${String(data.donation_id ?? "")})`;
+    default:
+      return "Sarah's Foundation";
+  }
+}
 
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) =>

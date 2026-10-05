@@ -38,6 +38,9 @@ export type DonationDoc = {
   stripe_payment_intent_id: string | null;
   stripe_customer_id: string | null;
   recurring: boolean;
+  // Set at verify-time by the supporter flow (Phase 7) when the donor_email
+  // matches a verified supporter. Donations with no match stay unlinked.
+  supporter_user_id: mongoose.Types.ObjectId | null;
   status: DonationStatus;
   // The posted transaction + its reversal if applicable.
   transaction_id: mongoose.Types.ObjectId | null;
@@ -71,6 +74,7 @@ const DonationSchema = new Schema<DonationDoc>(
     stripe_payment_intent_id: { type: String, default: null, maxlength: 64 },
     stripe_customer_id: { type: String, default: null, maxlength: 64 },
     recurring: { type: Boolean, default: false },
+    supporter_user_id: { type: Schema.Types.ObjectId, ref: "User", default: null },
     status: {
       type: String,
       enum: ["pending", "succeeded", "refunded", "partially_refunded", "disputed", "failed"],
@@ -91,6 +95,10 @@ DonationSchema.index(
 );
 DonationSchema.index({ organization_id: 1, received_at: -1 });
 DonationSchema.index({ organization_id: 1, status: 1, received_at: -1 });
+DonationSchema.index(
+  { organization_id: 1, supporter_user_id: 1, received_at: -1 },
+  { partialFilterExpression: { supporter_user_id: { $type: "objectId" } } }
+);
 DonationSchema.index(
   { stripe_charge_id: 1 },
   { unique: true, partialFilterExpression: { stripe_charge_id: { $type: "string" } } }

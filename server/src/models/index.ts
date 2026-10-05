@@ -61,3 +61,11 @@ export type { ReconciliationDoc, ReconciliationLine, ReconciliationStatus, Recon
 export { Loan } from "./Loan.js";
 export type { LoanDoc, LoanDirection, LoanStatus, RepaymentSchedule } from "./Loan.js";
 export type { FundRestriction } from "./Fund.js";
+export { SupporterProfile } from "./SupporterProfile.js";
+export type { SupporterProfileDoc, NotificationPrefs, NotificationChannel, NotificationFrequency } from "./SupporterProfile.js";
+export { ProjectFollow } from "./ProjectFollow.js";
+export type { ProjectFollowDoc } from "./ProjectFollow.js";
+export { Notification } from "./Notification.js";
+export type { NotificationDoc, NotificationTopic } from "./Notification.js";
+export { EmailDelivery } from "./EmailDelivery.js";
+export type { EmailDeliveryDoc, EmailDeliveryStatus } from "./EmailDelivery.js";

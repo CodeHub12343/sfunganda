@@ -55,6 +55,11 @@ const privs = {
       "exchange_rates",
       "reconciliations",
       "loans",
+      // Phase 7
+      "supporter_profiles",
+      "project_follows",
+      "notifications",
+      "email_deliveries",
     ].map((c) => ({
       resource: { db: DB, collection: c },
       actions: ["insert", "update", "remove", "createIndex"],

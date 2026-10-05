@@ -3,8 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { api, ApiClientError } from "@/lib/api";
 import { FundingBlock } from "@/components/ui/FundingBlock";
+import { FollowButton } from "@/components/ui/FollowButton";
 
 type Project = {
+  id: string;
   slug: string;
   name: string;
   summary: string;
@@ -57,11 +59,16 @@ export default async function ProjectDetail({
       <nav aria-label="Breadcrumb" style={{ marginBottom: "1rem", color: "#6b7280" }}>
         <Link href="/projects">Projects</Link> → <strong>{project.name}</strong>
       </nav>
-      <h1 style={{ fontSize: "2.25rem", marginBottom: "0.4rem" }}>{project.name}</h1>
-      <p style={{ color: "#6b7280" }}>
-        {project.community.name} · {project.community.region_label}
-        {project.category ? ` · ${project.category.name}` : null}
-      </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ fontSize: "2.25rem", marginBottom: "0.4rem" }}>{project.name}</h1>
+          <p style={{ color: "#6b7280", margin: 0 }}>
+            {project.community.name} · {project.community.region_label}
+            {project.category ? ` · ${project.category.name}` : null}
+          </p>
+        </div>
+        <FollowButton projectId={project.id} />
+      </div>
 
       <section aria-label="Progress" style={{ margin: "1.5rem 0" }}>
         <h2 style={{ fontSize: "1rem", margin: "0 0 0.4rem" }}>Progress</h2>

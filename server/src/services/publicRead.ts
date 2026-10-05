@@ -166,6 +166,9 @@ export async function getPublicAccomplishment(public_id: string): Promise<Public
 }
 
 export type PublicProject = {
+  // Opaque id — exposed so authenticated supporters can call
+  // POST /v1/me/follows with it. Not shown to the user.
+  id: string;
   slug: string;
   name: string;
   summary: string;
@@ -239,6 +242,7 @@ export async function getPublicProject(slug: string): Promise<PublicProject> {
     .lean();
 
   return {
+    id: p._id.toString(),
     slug: p.slug,
     name: p.name,
     summary: p.summary,

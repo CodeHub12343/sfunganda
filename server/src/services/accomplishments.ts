@@ -357,6 +357,15 @@ export async function transition(
           },
           session
         );
+        // Phase 7 — fan-out to followers of the project.
+        await enqueue(
+          {
+            organization_id: orgId,
+            topic: "notification.fanout_accomplishment_published",
+            payload: { accomplishment_id: doc._id.toString() },
+          },
+          session
+        );
       }
       if (input.transition === "submit") {
         await enqueue(

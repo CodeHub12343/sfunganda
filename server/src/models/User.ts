@@ -15,6 +15,12 @@ export type UserDoc = {
   invited_by: mongoose.Types.ObjectId | null;
   invite_token_hash: string | null; // sha256 of the invite token
   invite_expires_at: Date | null;
+  // Supporter email verification (Phase 7). Supporters self-sign-up and are
+  // created in status: "pending" until they click a mailed link. Staff users
+  // (invited via admin) are considered verified at invite-accept time.
+  email_verified_at: Date | null;
+  verification_token_hash: string | null;
+  verification_expires_at: Date | null;
   last_login_at: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -35,6 +41,9 @@ const UserSchema = new Schema<UserDoc>(
     invited_by: { type: Schema.Types.ObjectId, ref: "User", default: null },
     invite_token_hash: { type: String, default: null },
     invite_expires_at: { type: Date, default: null },
+    email_verified_at: { type: Date, default: null },
+    verification_token_hash: { type: String, default: null },
+    verification_expires_at: { type: Date, default: null },
     last_login_at: { type: Date, default: null },
     version: { type: Number, default: 0 },
   },

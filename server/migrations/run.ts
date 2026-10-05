@@ -7,10 +7,11 @@ import * as m0003 from "./0003_media.js";
 import * as m0004 from "./0004_projects.js";
 import * as m0005 from "./0005_finance.js";
 import * as m0006 from "./0006_finance_phase6.js";
+import * as m0007 from "./0007_supporters.js";
 
 type Migration = { name: string; up: () => Promise<void> };
 
-const MIGRATIONS: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006];
+const MIGRATIONS: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007];
 
 const COLL = "schema_migrations";
 

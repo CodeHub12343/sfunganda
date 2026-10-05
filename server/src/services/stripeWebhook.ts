@@ -302,6 +302,33 @@ async function handleCharge(ev: StripeEventPayload, orgId: mongoose.Types.Object
       await postToLedger(txn.toObject(), session);
       donation.transaction_id = txn._id;
       await donation.save({ session });
+
+      // Receipt: queue an acknowledgement to the donor's email (where
+      // present). Idempotent via EmailDelivery's unique key.
+      if (donation.donor_email) {
+        const { enqueue } = await import("./outbox.js");
+        await enqueue(
+          {
+            organization_id: orgId,
+            topic: "email.send_template",
+            payload: {
+              template: "donation_receipt",
+              to: donation.donor_email,
+              user_id: null,
+              idempotency_key: `receipt-${donation.public_id}`,
+              data: {
+                donor_name: donation.donor_name ?? "Friend",
+                amount: (donation.gross_source_cents / 100).toFixed(2),
+                currency: donation.source_currency,
+                donation_id: donation.public_id,
+                date: donation.received_at.toISOString().slice(0, 10),
+                project_name: project_id ? project_slug : null,
+              },
+            },
+          },
+          session
+        );
+      }
     });
   } finally {
     await session.endSession();
