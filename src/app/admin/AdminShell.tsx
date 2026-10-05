@@ -78,6 +78,11 @@ const NAV: NavLink[] = [
   { label: "Overview", href: "/admin", roles: ["founder", "director", "project_manager", "finance_manager", "media_manager"] },
   { label: "Users", href: "/admin/users", roles: ["founder", "director"] },
   { label: "Audit log", href: "/admin/audit", roles: ["founder", "director"] },
+  {
+    label: "Media library",
+    href: "/admin/media",
+    roles: ["founder", "director", "media_manager", "project_manager"],
+  },
 ];
 
 type Me = {

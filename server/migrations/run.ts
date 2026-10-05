@@ -3,10 +3,11 @@ import { connectDB, disconnectDB } from "@/config/db.js";
 import { log } from "@/util/log.js";
 import * as m0001 from "./0001_initial.js";
 import * as m0002 from "./0002_db_users.js";
+import * as m0003 from "./0003_media.js";
 
 type Migration = { name: string; up: () => Promise<void> };
 
-const MIGRATIONS: Migration[] = [m0001, m0002];
+const MIGRATIONS: Migration[] = [m0001, m0002, m0003];
 
 const COLL = "schema_migrations";
 

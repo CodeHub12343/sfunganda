@@ -55,6 +55,8 @@ export type Action =
   | "finance.write"
   // Media
   | "media.publish"
+  | "media.upload"
+  | "media.read_internal"
   // Self
   | "self.read"
   | "self.update";
@@ -173,6 +175,15 @@ export function can(actor: Actor, action: Action, resource: Resource = { kind: "
 
     case "media.publish":
       return hasRole(actor, "founder", "director", "media_manager", "project_manager");
+
+    case "media.upload":
+      // Any authenticated staff member — plus field_members who gather
+      // evidence — may upload. Supporters cannot upload directly (consent
+      // flow is operator-driven; supporters go through supporter forms).
+      return hasRole(actor, ...STAFF);
+
+    case "media.read_internal":
+      return hasRole(actor, ...STAFF);
   }
 }
 

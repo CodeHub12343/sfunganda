@@ -42,6 +42,36 @@ const EnvSchema = z.object({
   INTERNAL_PROXY_SECRET: z.string().min(16, "INTERNAL_PROXY_SECRET must be at least 16 chars"),
 
   MFA_ISSUER: z.string().default("Sarah's Foundation"),
+
+  // ---- Media pipeline (Phase 2) --------------------------------------------
+  // S3-compatible storage (Cloudflare R2). Three logical buckets:
+  // originals (private), derivatives (public), documents (private, separate
+  // origin per §14.3). Each may share an account/endpoint but MUST be
+  // distinct buckets so lifecycle and ACLs can be set independently.
+  R2_ENDPOINT: z.string().url().optional(),
+  R2_REGION: z.string().default("auto"),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_ORIGINALS: z.string().default("sfu-originals"),
+  R2_BUCKET_DERIVATIVES: z.string().default("sfu-derivatives"),
+  R2_BUCKET_DOCUMENTS: z.string().default("sfu-documents"),
+  // Public CDN origin that serves the derivatives bucket. Documents are
+  // served from a separate signed-URL path and are NEVER on this origin.
+  R2_PUBLIC_DERIVATIVES_URL: z.string().url().optional(),
+  R2_SIGNED_URL_TTL_SECONDS: z.coerce.number().int().min(30).max(3600).default(300),
+  R2_UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(7200).default(1800),
+  // Hard caps on upload size by kind (§14.3). Bytes.
+  MEDIA_MAX_PHOTO_BYTES: z.coerce.number().int().positive().default(25 * 1024 * 1024),
+  MEDIA_MAX_DOCUMENT_BYTES: z.coerce.number().int().positive().default(50 * 1024 * 1024),
+  MEDIA_MAX_VIDEO_BYTES: z.coerce.number().int().positive().default(2 * 1024 * 1024 * 1024),
+  // Cloudflare Stream integration (video provider).
+  STREAM_ACCOUNT_ID: z.string().optional(),
+  STREAM_API_TOKEN: z.string().optional(),
+  STREAM_WEBHOOK_SECRET: z.string().optional(),
+  // Malware scanner sidecar — HTTP endpoint of a ClamAV REST shim or ICAP
+  // gateway. Required in production; stubbed in dev when unset.
+  MALWARE_SCANNER_URL: z.string().url().optional(),
+  MALWARE_SCANNER_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

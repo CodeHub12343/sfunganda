@@ -15,6 +15,9 @@ import auditRoutes from "./routes/audit.js";
 import donationsRoutes from "./routes/donations.js";
 import volunteersRoutes from "./routes/volunteers.js";
 import healthRoutes from "./routes/health.js";
+import mediaRoutes from "./routes/media.js";
+import videosRoutes from "./routes/videos.js";
+import mediaWebhookRoutes from "./routes/mediaWebhooks.js";
 
 export function buildApp() {
   const app = express();
@@ -64,6 +67,11 @@ export function buildApp() {
   // Health is public and does not require the proxy secret.
   app.use("/health", healthRoutes);
 
+  // Provider webhooks ship their own authenticity signatures and must not
+  // go through the internal-proxy gate. Mount BEFORE the gate so the
+  // provider talks to the API directly.
+  app.use("/v1/webhooks", mediaWebhookRoutes);
+
   // Everything else must come through our Next.js rewrite layer (or an
   // explicit server-to-server caller with the shared secret).
   app.use(internalProxyRequired);
@@ -80,6 +88,8 @@ export function buildApp() {
   app.use("/v1/audit", auditRoutes);
   app.use("/v1/donations", donationsRoutes);
   app.use("/v1/volunteers", volunteersRoutes);
+  app.use("/v1/media", mediaRoutes);
+  app.use("/v1/videos", videosRoutes);
 
   // 404
   app.use((_req, _res, next) => next(new AppError("not_found", "not found")));
