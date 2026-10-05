@@ -15,7 +15,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:install": "playwright install --with-deps chromium"
+    "test:e2e:install": "playwright install --with-deps chromium",
+    "test:e2e:mobile": "playwright test --project=mobile-uganda",
+    "audit": "npm audit --omit=dev --audit-level=high",
+    "headers-scan": "node scripts/headers-scan.mjs",
+    "perf-budget": "node scripts/perf-budget.mjs",
+    "authz-matrix": "node scripts/authz-matrix.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.0.0",

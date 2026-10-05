@@ -72,7 +72,30 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
       <body>
-        <Providers nonce={nonce}>{children}</Providers>
+        {/* Skip link — hidden until keyboard focus (WCAG 2.1 bypass blocks). */}
+        <style>{`
+          .sfu-skip {
+            position: absolute;
+            left: -9999px;
+            top: 8px;
+            padding: 0.6rem 1rem;
+            background: #103D7A;
+            color: #fff;
+            border-radius: 8px;
+            text-decoration: none;
+            z-index: 10000;
+          }
+          .sfu-skip:focus {
+            left: 8px;
+            outline: 3px solid #F7B733;
+          }
+        `}</style>
+        <a href="#main" className="sfu-skip">
+          Skip to content
+        </a>
+        <Providers nonce={nonce}>
+          <div id="main">{children}</div>
+        </Providers>
       </body>
     </html>
   );

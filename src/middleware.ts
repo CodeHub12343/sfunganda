@@ -26,8 +26,38 @@ function cryptoRandom(bytes: number): string {
   return out;
 }
 
+function hostOf(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return null;
+  }
+}
+
 function buildCsp(nonce: string): string {
   const self = "'self'";
+  const mediaHosts = [
+    hostOf(process.env.R2_PUBLIC_DERIVATIVES_URL),
+    process.env.NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN
+      ? `https://${process.env.NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN}.cloudflarestream.com`
+      : null,
+  ].filter((x): x is string => !!x);
+  const imgSrc = ["'self'", "data:", "blob:", "https://images.unsplash.com", ...mediaHosts].join(" ");
+  const mediaSrc = ["'self'", "blob:", ...mediaHosts].join(" ");
+  const connectSrc = [
+    "'self'",
+    "https://api.stripe.com",
+    ...mediaHosts,
+  ].join(" ");
+  const frameSrc = [
+    "https://js.stripe.com",
+    "https://checkout.stripe.com",
+    ...(process.env.NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN
+      ? [`https://${process.env.NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN}.cloudflarestream.com`]
+      : []),
+  ].join(" ");
   return [
     `default-src ${self}`,
     `script-src ${self} 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com`,
@@ -38,9 +68,13 @@ function buildCsp(nonce: string): string {
     // styles entirely.
     `style-src ${self} 'nonce-${nonce}' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src ${self} data: https://fonts.gstatic.com`,
-    `img-src ${self} data: blob: https://images.unsplash.com`,
-    `connect-src ${self} https://api.stripe.com`,
-    `frame-src https://js.stripe.com https://checkout.stripe.com`,
+    // Phase 2+ media hosts: public R2 derivatives CDN, private R2 for signed
+    // downloads, and Cloudflare Stream for HLS playlists. Hosts come from
+    // env so a staging/production split needs no code change.
+    `img-src ${imgSrc}`,
+    `media-src ${mediaSrc}`,
+    `connect-src ${connectSrc}`,
+    `frame-src ${frameSrc}`,
     `form-action ${self} https://checkout.stripe.com`,
     `frame-ancestors 'none'`,
     `base-uri ${self}`,

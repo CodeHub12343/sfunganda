@@ -33,12 +33,37 @@ export function LoadingState({ label = "Loading…" }: { label?: string }) {
   return <Box aria-busy="true">{label}</Box>;
 }
 
-export function ErrorState({ message, retry }: { message: string; retry?: () => void }) {
+export function ErrorState({
+  message,
+  retry,
+  onRetry,
+}: {
+  message: string;
+  retry?: () => void;
+  onRetry?: () => void;
+}) {
+  const handler = retry ?? onRetry;
   return (
     <Box role="alert">
       <h3>Something went wrong</h3>
       <p>{message}</p>
-      {retry ? <button onClick={retry}>Try again</button> : null}
+      {handler ? (
+        <button
+          type="button"
+          onClick={handler}
+          style={{
+            marginTop: "0.5rem",
+            padding: "0.6rem 1rem",
+            borderRadius: 999,
+            border: "1px solid currentColor",
+            background: "transparent",
+            cursor: "pointer",
+            color: "inherit",
+          }}
+        >
+          Try again
+        </button>
+      ) : null}
     </Box>
   );
 }

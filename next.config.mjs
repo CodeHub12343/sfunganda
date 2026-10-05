@@ -55,7 +55,20 @@ const nextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      // Public R2 derivatives — host comes from env so staging and prod use
+      // different buckets without a code change. The regex form supports an
+      // r2.dev subdomain in dev and a custom hostname in production.
+      ...(process.env.R2_PUBLIC_DERIVATIVES_URL
+        ? [{ protocol: "https", hostname: new URL(process.env.R2_PUBLIC_DERIVATIVES_URL).hostname }]
+        : []),
+      // Signed-URL downloads from the private R2 endpoint go through
+      // next/image when the HTML uses it. Allow the account's S3 host.
+      ...(process.env.R2_ENDPOINT
+        ? [{ protocol: "https", hostname: new URL(process.env.R2_ENDPOINT).hostname }]
+        : []),
+    ],
   },
   reactStrictMode: true,
   poweredByHeader: false,
