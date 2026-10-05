@@ -152,7 +152,67 @@ const handlers: Record<string, HandlerFn> = {
     const n = await sweepOrphans(24 * 60 * 60 * 1000);
     log.info({ swept: n }, "media.sweep");
   },
+
+  async "notify.review_queue"(payload) {
+    // Email staff with the accomplishments.review action that a new item is
+    // waiting. We don't dynamically resolve inboxes here — a `REVIEW_NOTIFY_TO`
+    // env var carries a comma-separated list configured by ops. In Phase 1's
+    // volunteer handler the same convention is already in use.
+    const to = (process.env.REVIEW_NOTIFY_TO ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    if (to.length === 0) {
+      log.warn({ payload }, "notify.review_queue.no_recipients");
+      return;
+    }
+    const title = String(payload.title ?? "Untitled");
+    const id = String(payload.accomplishment_id ?? "");
+    const link = `${env.PUBLIC_SITE_URL.replace(/\/$/, "")}/admin/queue/${id}`;
+    const subject = `Review needed: ${title}`;
+    const html = `<p>A new accomplishment is awaiting review:</p><p><a href="${link}">${title}</a></p>`;
+    for (const rcpt of to) {
+      await sendMail({ to: rcpt, subject, html, text: `${subject}\n${link}` });
+    }
+  },
+
+  async "notify.author_revision"(payload) {
+    const authorId = String(payload.author_id ?? "");
+    if (!authorId || !mongoose.isValidObjectId(authorId)) return;
+    const { User } = await import("@/models/index.js");
+    const author = await User.findById(authorId).lean();
+    if (!author?.email) return;
+    const link = `${env.PUBLIC_SITE_URL.replace(/\/$/, "")}/field/draft/${payload.accomplishment_id}`;
+    const subject = "Changes requested on your accomplishment";
+    const note = String(payload.note ?? "").slice(0, 2000);
+    const html = `<p>A reviewer has requested changes:</p><blockquote>${escapeHtml(note)}</blockquote><p><a href="${link}">Open the draft</a></p>`;
+    await sendMail({ to: author.email, subject, html, text: `${subject}\n${note}\n${link}` });
+  },
+
+  async "cache.revalidate"(payload) {
+    const tags = Array.isArray(payload.tags) ? (payload.tags as string[]) : [];
+    const base = process.env.REVALIDATE_URL;
+    const secret = process.env.REVALIDATE_SECRET;
+    if (!base || !secret) {
+      log.info({ tags }, "cache.revalidate.dry_run");
+      return;
+    }
+    for (const tag of tags) {
+      try {
+        const res = await fetch(`${base}?tag=${encodeURIComponent(tag)}`, {
+          method: "POST",
+          headers: { "x-revalidate-secret": secret },
+        });
+        if (!res.ok) log.warn({ tag, status: res.status }, "cache.revalidate.failed");
+      } catch (err) {
+        log.warn({ tag, err: (err as Error).message }, "cache.revalidate.error");
+      }
+    }
+  },
 };
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : c === '"' ? "&quot;" : "&#39;"
+  );
+}
 
 // Allow MAIL recipient env override at handler time (not stored in audit).
 export function resolveVolunteerRecipient(): string | null {

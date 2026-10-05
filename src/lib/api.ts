@@ -27,9 +27,9 @@ export class ApiClientError extends Error {
 
 export async function api<T>(
   path: string,
-  init: RequestInit & { json?: unknown } = {}
+  init: RequestInit & { json?: unknown; tags?: string[]; revalidate?: number } = {}
 ): Promise<T> {
-  const { json, headers, ...rest } = init;
+  const { json, headers, tags, revalidate, ...rest } = init;
   const h = new Headers(headers);
   const method = (rest.method ?? (json !== undefined ? "POST" : "GET")).toUpperCase();
   if (json !== undefined) h.set("content-type", "application/json");
@@ -40,13 +40,19 @@ export async function api<T>(
     h.set("x-internal-secret", process.env.INTERNAL_PROXY_SECRET);
   }
 
+  const nextOpt =
+    typeof window === "undefined" && (tags || revalidate !== undefined)
+      ? { next: { tags, revalidate } }
+      : {};
+
   const res = await fetch(`${base()}${path}`, {
     ...rest,
     method,
     headers: h,
     credentials: typeof window !== "undefined" ? "same-origin" : rest.credentials,
     body: json !== undefined ? JSON.stringify(json) : rest.body,
-  });
+    ...nextOpt,
+  } as RequestInit);
 
   const payload = (await res.json().catch(() => ({}))) as ApiResponse<T> & {
     data?: T;

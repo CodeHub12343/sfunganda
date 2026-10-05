@@ -57,6 +57,22 @@ export type Action =
   | "media.publish"
   | "media.upload"
   | "media.read_internal"
+  // Projects & milestones
+  | "projects.read"
+  | "projects.create"
+  | "projects.update"
+  | "projects.archive"
+  // Accomplishments
+  | "accomplishments.author"
+  | "accomplishments.read"
+  | "accomplishments.review"
+  | "accomplishments.approve"
+  | "accomplishments.publish"
+  | "accomplishments.archive"
+  // Metrics
+  | "metrics.read"
+  | "metrics.write_definition"
+  | "metrics.write_entry"
   // Self
   | "self.read"
   | "self.update";
@@ -121,6 +137,14 @@ export function can(actor: Actor, action: Action, resource: Resource = { kind: "
       "communities.update",
       "field.open",
       "finance.write",
+      "projects.create",
+      "projects.update",
+      "projects.archive",
+      "accomplishments.review",
+      "accomplishments.approve",
+      "accomplishments.publish",
+      "accomplishments.archive",
+      "metrics.write_definition",
     ];
     if (mfaRequired.includes(action)) return false;
   }
@@ -177,13 +201,46 @@ export function can(actor: Actor, action: Action, resource: Resource = { kind: "
       return hasRole(actor, "founder", "director", "media_manager", "project_manager");
 
     case "media.upload":
-      // Any authenticated staff member — plus field_members who gather
-      // evidence — may upload. Supporters cannot upload directly (consent
-      // flow is operator-driven; supporters go through supporter forms).
       return hasRole(actor, ...STAFF);
 
     case "media.read_internal":
       return hasRole(actor, ...STAFF);
+
+    case "projects.read":
+      return hasRole(actor, ...STAFF);
+    case "projects.create":
+      return hasRole(actor, "founder", "director", "project_manager");
+    case "projects.update":
+      return hasRole(actor, "founder", "director", "project_manager");
+    case "projects.archive":
+      return hasRole(actor, "founder", "director");
+
+    case "accomplishments.author":
+      // Field members and project managers author; founders/directors may
+      // too, though they usually review rather than author.
+      return hasRole(actor, "founder", "director", "project_manager", "field_member");
+    case "accomplishments.read":
+      return hasRole(actor, ...STAFF);
+    case "accomplishments.review":
+      // Reviewers = project managers and directors; founders may step in.
+      return hasRole(actor, "founder", "director", "project_manager");
+    case "accomplishments.approve":
+      // Approvers = directors and founders. The service enforces that the
+      // approver is NOT the author (separation of duties, §15.3).
+      return hasRole(actor, "founder", "director");
+    case "accomplishments.publish":
+      // Publishers = founders and directors. The service additionally
+      // forbids the approver from being the publisher where configured.
+      return hasRole(actor, "founder", "director");
+    case "accomplishments.archive":
+      return hasRole(actor, "founder", "director");
+
+    case "metrics.read":
+      return hasRole(actor, ...STAFF);
+    case "metrics.write_definition":
+      return hasRole(actor, "founder", "director", "finance_manager");
+    case "metrics.write_entry":
+      return hasRole(actor, "founder", "director", "project_manager", "finance_manager", "field_member");
   }
 }
 

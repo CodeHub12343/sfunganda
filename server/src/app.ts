@@ -18,6 +18,10 @@ import healthRoutes from "./routes/health.js";
 import mediaRoutes from "./routes/media.js";
 import videosRoutes from "./routes/videos.js";
 import mediaWebhookRoutes from "./routes/mediaWebhooks.js";
+import projectsRoutes from "./routes/projects.js";
+import accomplishmentsRoutes from "./routes/accomplishments.js";
+import metricsRoutes from "./routes/metrics.js";
+import publicPortalRoutes from "./routes/publicPortal.js";
 
 export function buildApp() {
   const app = express();
@@ -90,6 +94,10 @@ export function buildApp() {
   app.use("/v1/volunteers", volunteersRoutes);
   app.use("/v1/media", mediaRoutes);
   app.use("/v1/videos", videosRoutes);
+  app.use("/v1/projects", projectsRoutes);
+  app.use("/v1/accomplishments", accomplishmentsRoutes);
+  app.use("/v1/metrics", metricsRoutes);
+  app.use("/v1/public", publicPortalRoutes);
 
   // 404
   app.use((_req, _res, next) => next(new AppError("not_found", "not found")));
