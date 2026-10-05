@@ -11,11 +11,13 @@ import type {
   TransactionLine,
   TransactionState,
 } from "@/models/FinancialTransaction.js";
+import type { FundDoc } from "@/models/Fund.js";
 import { AppError } from "@/util/errors.js";
 import { can, type Actor } from "@/policy/index.js";
 import { env } from "@/config/env.js";
 import { assertBalanced, postToLedger, reversalLines } from "./ledger.js";
 import { enqueue } from "./outbox.js";
+import { assertPeriodWritable } from "./periods.js";
 
 export type LineInput = {
   side: "debit" | "credit";
@@ -73,6 +75,7 @@ export async function createDraft(
     })
   );
   assertBalanced(lines);
+  await assertRestrictedFundRules(orgId, lines);
 
   const doc = await FinancialTransaction.create({
     organization_id: orgId,
@@ -96,7 +99,8 @@ export async function createDraft(
   return doc.toObject();
 }
 
-// Transition action -> target state.
+// Transition action -> target state. "approve" may remain in "submitted" when
+// a second approver is still required; the service layer handles that.
 const TRANSITIONS: Record<
   string,
   { from: TransactionState[]; to: TransactionState; policy: "finance.write"; requiresStepUp?: boolean }
@@ -107,6 +111,59 @@ const TRANSITIONS: Record<
   reverse: { from: ["posted"], to: "reversed", policy: "finance.write", requiresStepUp: true },
   void: { from: ["draft", "submitted"], to: "void", policy: "finance.write" },
 };
+
+async function assertRestrictedFundRules(
+  organization_id: mongoose.Types.ObjectId,
+  lines: TransactionLine[]
+): Promise<void> {
+  const fundIds = Array.from(new Set(lines.map((l) => l.fund_id.toString())));
+  const funds = await Fund.find({
+    _id: { $in: fundIds.map((id) => new mongoose.Types.ObjectId(id)) },
+    organization_id,
+  }).lean<FundDoc[]>();
+  const byId = new Map(funds.map((f) => [f._id.toString(), f]));
+  for (const line of lines) {
+    const f = byId.get(line.fund_id.toString());
+    if (!f) throw new AppError("not_found", "fund not found");
+    if (!f.active) throw new AppError("unprocessable", `fund ${f.code} is inactive`);
+    const r = f.restriction;
+    if (!r) continue;
+    // Expiry: restricted funds can only transfer-out after expiry.
+    if (r.expires_on && new Date() > new Date(r.expires_on)) {
+      const allowed = line.account === "transfer_out" || line.account === "transfer_in";
+      if (!allowed) {
+        throw new AppError("unprocessable", `fund ${f.code} restriction has expired`, {
+          fields: { fund: "expired" },
+        });
+      }
+    }
+    // Expense account prefix allow-list.
+    if (line.side === "debit" && line.account.startsWith("expense_")) {
+      if (r.allowed_expense_prefixes.length > 0) {
+        const ok = r.allowed_expense_prefixes.some((p) => line.account.startsWith(p.toLowerCase()));
+        if (!ok) {
+          throw new AppError("forbidden", `fund ${f.code} does not permit ${line.account}`, {
+            fields: { account: "restricted" },
+          });
+        }
+      }
+    }
+    // Project allow-list (applies to project-tied lines).
+    if (line.project_id && r.allowed_project_ids.length > 0) {
+      const pidStr = line.project_id.toString();
+      const ok = r.allowed_project_ids.some((p) => p.toString() === pidStr);
+      if (!ok) {
+        throw new AppError("forbidden", `fund ${f.code} does not permit project ${pidStr}`, {
+          fields: { project: "restricted" },
+        });
+      }
+    }
+  }
+}
+
+export function requiresDualApproval(base_amount_cents: number): boolean {
+  return base_amount_cents >= env.DUAL_APPROVAL_THRESHOLD_CENTS;
+}
 
 export async function actOnTransaction(
   actor: Actor,
@@ -153,18 +210,49 @@ export async function actOnTransaction(
 
       const now = new Date();
       const from = doc.state;
-      doc.state = t.to;
       doc.version += 1;
+
+      // Default: apply the transition. We may overwrite the target state in
+      // specific branches below (dual approval, post, reverse).
+      doc.state = t.to;
 
       if (action === "submit") {
         doc.submitted_by = uid;
         doc.submitted_at = now;
       }
       if (action === "approve") {
-        doc.approved_by = uid;
-        doc.approved_at = now;
+        const needsDual = requiresDualApproval(doc.base_amount_cents);
+        if (!doc.approved_by) {
+          doc.approved_by = uid;
+          doc.approved_at = now;
+          if (needsDual) {
+            // First of two — keep in submitted until the second approver signs.
+            doc.state = "submitted";
+          }
+        } else if (needsDual && !doc.secondary_approved_by) {
+          if (doc.approved_by.toString() === actor.user_id) {
+            throw new AppError("forbidden", "second approver must be different from the first", {
+              fields: { approver: "duplicate" },
+            });
+          }
+          if (doc.created_by.toString() === actor.user_id) {
+            throw new AppError("forbidden", "the creator cannot be a second approver");
+          }
+          doc.secondary_approved_by = uid;
+          doc.secondary_approved_at = now;
+          doc.state = "approved";
+        } else {
+          throw new AppError("conflict", "already approved");
+        }
       }
       if (action === "post") {
+        if (requiresDualApproval(doc.base_amount_cents) && !doc.secondary_approved_by) {
+          throw new AppError("forbidden", "dual approval required before posting", {
+            fields: { approval: "second_required" },
+          });
+        }
+        // Period lock: refuse to post into a non-open period.
+        doc.period_code = await assertPeriodWritable(orgId, doc.occurred_on, session);
         if (!doc.public_id) {
           doc.public_id = await allocatePublicId(orgId, now.getUTCFullYear(), session);
         }
@@ -173,9 +261,10 @@ export async function actOnTransaction(
         await postToLedger(doc.toObject() as FinancialTransactionDoc, session);
       }
       if (action === "reverse") {
-        // A reversal posts a new, mirrored transaction that itself needs no
-        // further approval (the reversal act IS the approval). The original
-        // transaction's state flips to "reversed" to mark the pair.
+        // Reversal lands in the current period, not the original. If the
+        // CURRENT period is locked, the reversal is refused — operators
+        // reopen the period explicitly before posting corrections.
+        const reversalCode = await assertPeriodWritable(orgId, now, session);
         const reversal = await FinancialTransaction.create(
           [
             {
@@ -194,6 +283,7 @@ export async function actOnTransaction(
               posted_by: uid,
               posted_at: now,
               reversal_of: doc._id,
+              period_code: reversalCode,
               public_id: await allocatePublicId(orgId, now.getUTCFullYear(), session),
             },
           ],

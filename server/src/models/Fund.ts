@@ -6,6 +6,17 @@ import mongoose, { Schema } from "mongoose";
 // leave it null.
 export type FundKind = "general" | "project" | "restricted" | "endowment";
 
+export type FundRestriction = {
+  // Human-readable purpose (shown in the admin UI).
+  purpose: string;
+  // Account prefixes allowed on expense lines. Empty => all expense_* allowed.
+  allowed_expense_prefixes: string[];
+  // Projects this fund may spend on. Empty => any (unrestricted project).
+  allowed_project_ids: mongoose.Types.ObjectId[];
+  // Expiry — after this date the fund can only be transferred to GEN.
+  expires_on: Date | null;
+};
+
 export type FundDoc = {
   _id: mongoose.Types.ObjectId;
   organization_id: mongoose.Types.ObjectId;
@@ -17,10 +28,10 @@ export type FundDoc = {
   // Denormalized rolling balance in base-currency cents, maintained by the
   // ledger service inside the post transaction.
   balance_cents: number;
-  // Denormalized lifetime totals for the transparency page. Both are
-  // monotonically non-decreasing (reversals affect balance_cents, not these).
   total_in_cents: number;
   total_out_cents: number;
+  // Set only on kind=restricted or kind=endowment; null for general/project.
+  restriction: FundRestriction | null;
   active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -41,6 +52,18 @@ const FundSchema = new Schema<FundDoc>(
     balance_cents: { type: Number, default: 0 },
     total_in_cents: { type: Number, default: 0 },
     total_out_cents: { type: Number, default: 0 },
+    restriction: {
+      type: new Schema(
+        {
+          purpose: { type: String, required: true, maxlength: 500 },
+          allowed_expense_prefixes: { type: [String], default: [] },
+          allowed_project_ids: { type: [Schema.Types.ObjectId], ref: "Project", default: [] },
+          expires_on: { type: Date, default: null },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
     active: { type: Boolean, default: true },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" }, collection: "funds" }

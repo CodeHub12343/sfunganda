@@ -78,9 +78,11 @@ const EnvSchema = z.object({
   // Seed for the ledger hash chain. If unset in dev, a static value is used
   // so repeated test runs produce deterministic chains.
   LEDGER_HASH_SEED: z.string().min(16).default("sfu-ledger-dev-seed-0000000000000"),
-  // Base currency for the organization. Transactions in other currencies are
-  // stored with their original amount AND an FX-converted base amount.
   BASE_CURRENCY: z.string().length(3).default("USD"),
+  // Phase 6
+  DUAL_APPROVAL_THRESHOLD_CENTS: z.coerce.number().int().positive().default(500_000),
+  FX_RATE_SOURCE_URL: z.string().url().optional(),
+  FX_RATE_SOURCE_NAME: z.string().default("exchangerate.host"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

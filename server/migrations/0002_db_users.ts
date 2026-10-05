@@ -50,6 +50,11 @@ const privs = {
       "financial_documents",
       "donations",
       "integrity_reports",
+      // Phase 6
+      "accounting_periods",
+      "exchange_rates",
+      "reconciliations",
+      "loans",
     ].map((c) => ({
       resource: { db: DB, collection: c },
       actions: ["insert", "update", "remove", "createIndex"],

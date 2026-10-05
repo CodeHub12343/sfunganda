@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import {
+  AccountingPeriod,
   Donation,
   Fund,
   LedgerEntry,
@@ -23,6 +24,14 @@ export type PublicFundingSummary = {
     expenses_cents: number;
     remaining_cents: number;
   };
+  by_fund_type: Array<{
+    kind: "general" | "project" | "restricted" | "endowment";
+    name: string;
+    balance_cents: number;
+    in_cents: number;
+    out_cents: number;
+    fund_count: number;
+  }>;
   per_project: Array<{
     slug: string;
     name: string;
@@ -37,6 +46,13 @@ export type PublicFundingSummary = {
     currency: string;
     at: string;
     project_slug: string | null;
+  }>;
+  closed_periods: Array<{
+    code: string;
+    gross_cents: number;
+    net_cents: number;
+    expenses_cents: number;
+    closed_at: string;
   }>;
   as_of: string;
 };
@@ -79,6 +95,33 @@ export async function publicFinanceSummary(): Promise<PublicFundingSummary> {
   const funds = await Fund.find({ organization_id: orgId }).lean();
   const base_currency = funds[0]?.base_currency ?? "USD";
   const remaining = funds.reduce((n, f) => n + Math.max(0, f.balance_cents), 0);
+
+  const byTypeMap = new Map<
+    string,
+    { kind: "general" | "project" | "restricted" | "endowment"; name: string; balance_cents: number; in_cents: number; out_cents: number; fund_count: number }
+  >();
+  const KIND_LABEL = {
+    general: "Unrestricted (General)",
+    project: "Project-tied",
+    restricted: "Restricted",
+    endowment: "Endowment",
+  } as const;
+  for (const f of funds) {
+    const entry = byTypeMap.get(f.kind) ?? {
+      kind: f.kind,
+      name: KIND_LABEL[f.kind],
+      balance_cents: 0,
+      in_cents: 0,
+      out_cents: 0,
+      fund_count: 0,
+    };
+    entry.balance_cents += f.balance_cents;
+    entry.in_cents += f.total_in_cents;
+    entry.out_cents += f.total_out_cents;
+    entry.fund_count += 1;
+    byTypeMap.set(f.kind, entry);
+  }
+  const by_fund_type = Array.from(byTypeMap.values()).sort((a, b) => b.balance_cents - a.balance_cents);
 
   // Per-project — raised = donations tied to project (gross), spent = sum
   // of expense debits that reference project_id.
@@ -135,6 +178,23 @@ export async function publicFinanceSummary(): Promise<PublicFundingSummary> {
     project_slug: d.project_id ? projectBySlug.get(d.project_id.toString()) ?? null : null,
   }));
 
+  const closed = await AccountingPeriod.find({
+    organization_id: orgId,
+    status: "closed",
+  })
+    .sort({ code: -1 })
+    .limit(12)
+    .lean();
+  const closed_periods = closed
+    .filter((p) => p.snapshot)
+    .map((p) => ({
+      code: p.code,
+      gross_cents: p.snapshot!.gross_received_cents,
+      net_cents: p.snapshot!.net_received_cents,
+      expenses_cents: p.snapshot!.expenses_cents,
+      closed_at: p.closed_at ? p.closed_at.toISOString() : p.snapshot!.taken_at.toISOString(),
+    }));
+
   return {
     base_currency,
     totals: {
@@ -145,8 +205,10 @@ export async function publicFinanceSummary(): Promise<PublicFundingSummary> {
       expenses_cents: expensesTotal,
       remaining_cents: remaining,
     },
+    by_fund_type,
     per_project,
     recent_donations,
+    closed_periods,
     as_of: new Date().toISOString(),
   };
 }

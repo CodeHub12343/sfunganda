@@ -23,6 +23,7 @@ import accomplishmentsRoutes from "./routes/accomplishments.js";
 import metricsRoutes from "./routes/metrics.js";
 import publicPortalRoutes from "./routes/publicPortal.js";
 import financeRoutes from "./routes/finance.js";
+import financePhase6Routes from "./routes/financePhase6.js";
 import stripeWebhookRoutes from "./routes/stripeWebhook.js";
 
 export function buildApp() {
@@ -107,6 +108,7 @@ export function buildApp() {
   app.use("/v1/accomplishments", accomplishmentsRoutes);
   app.use("/v1/metrics", metricsRoutes);
   app.use("/v1/finance", financeRoutes);
+  app.use("/v1/finance", financePhase6Routes);
   app.use("/v1/public", publicPortalRoutes);
 
   // 404

@@ -47,6 +47,9 @@ export type FinancialTransactionDoc = {
   submitted_at: Date | null;
   approved_by: mongoose.Types.ObjectId | null;
   approved_at: Date | null;
+  secondary_approved_by: mongoose.Types.ObjectId | null;
+  secondary_approved_at: Date | null;
+  period_code: string | null;
   posted_by: mongoose.Types.ObjectId | null;
   posted_at: Date | null;
   reversed_by: mongoose.Types.ObjectId | null;
@@ -108,6 +111,9 @@ const FinancialTransactionSchema = new Schema<FinancialTransactionDoc>(
     submitted_at: { type: Date, default: null },
     approved_by: { type: Schema.Types.ObjectId, ref: "User", default: null },
     approved_at: { type: Date, default: null },
+    secondary_approved_by: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    secondary_approved_at: { type: Date, default: null },
+    period_code: { type: String, default: null, maxlength: 10 },
     posted_by: { type: Schema.Types.ObjectId, ref: "User", default: null },
     posted_at: { type: Date, default: null },
     reversed_by: { type: Schema.Types.ObjectId, ref: "User", default: null },

@@ -17,6 +17,14 @@ type Summary = {
     expenses_cents: number;
     remaining_cents: number;
   };
+  by_fund_type: Array<{
+    kind: string;
+    name: string;
+    balance_cents: number;
+    in_cents: number;
+    out_cents: number;
+    fund_count: number;
+  }>;
   per_project: Array<{
     slug: string;
     name: string;
@@ -31,6 +39,13 @@ type Summary = {
     currency: string;
     at: string;
     project_slug: string | null;
+  }>;
+  closed_periods: Array<{
+    code: string;
+    gross_cents: number;
+    net_cents: number;
+    expenses_cents: number;
+    closed_at: string;
   }>;
   as_of: string;
 };
@@ -86,6 +101,67 @@ export default async function TransparencyPage() {
         <Tile label="Remaining to spend" value={money(data.totals.remaining_cents, data.base_currency)} />
         <Tile label="Donations count" value={Intl.NumberFormat().format(data.totals.donations_count)} />
       </section>
+
+      <section aria-label="By fund type">
+        <h2>By fund type</h2>
+        <p style={{ color: "#6b7280" }}>
+          How the balance is partitioned across unrestricted, project-tied, restricted, and endowment funds. Charts use the same numbers as the table below for comparison.
+        </p>
+        <FundTypeChart items={data.by_fund_type} currency={data.base_currency} />
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem", fontSize: "0.9rem" }}>
+          <thead>
+            <tr style={{ textAlign: "left" }}>
+              <th style={{ padding: "0.4rem" }}>Fund type</th>
+              <th style={{ padding: "0.4rem", textAlign: "right" }}>Balance</th>
+              <th style={{ padding: "0.4rem", textAlign: "right" }}>Received</th>
+              <th style={{ padding: "0.4rem", textAlign: "right" }}>Spent</th>
+              <th style={{ padding: "0.4rem", textAlign: "right" }}>Funds</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.by_fund_type.map((f) => (
+              <tr key={f.kind} style={{ borderTop: "1px solid #e5e7eb" }}>
+                <td style={{ padding: "0.4rem" }}>{f.name}</td>
+                <td style={{ padding: "0.4rem", textAlign: "right" }}>{money(f.balance_cents, data!.base_currency)}</td>
+                <td style={{ padding: "0.4rem", textAlign: "right" }}>{money(f.in_cents, data!.base_currency)}</td>
+                <td style={{ padding: "0.4rem", textAlign: "right" }}>{money(f.out_cents, data!.base_currency)}</td>
+                <td style={{ padding: "0.4rem", textAlign: "right" }}>{f.fund_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      {data.closed_periods.length > 0 ? (
+        <section aria-label="Closed periods" style={{ marginTop: "2.5rem" }}>
+          <h2>Closed accounting periods</h2>
+          <p style={{ color: "#6b7280" }}>
+            Snapshots of the figures at close. These are frozen numbers used in our annual report.
+          </p>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+            <thead>
+              <tr style={{ textAlign: "left" }}>
+                <th style={{ padding: "0.4rem" }}>Period</th>
+                <th style={{ padding: "0.4rem", textAlign: "right" }}>Gross received</th>
+                <th style={{ padding: "0.4rem", textAlign: "right" }}>Net received</th>
+                <th style={{ padding: "0.4rem", textAlign: "right" }}>Expenses</th>
+                <th style={{ padding: "0.4rem" }}>Closed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.closed_periods.map((p) => (
+                <tr key={p.code} style={{ borderTop: "1px solid #e5e7eb" }}>
+                  <td style={{ padding: "0.4rem" }}>{p.code}</td>
+                  <td style={{ padding: "0.4rem", textAlign: "right" }}>{money(p.gross_cents, data!.base_currency)}</td>
+                  <td style={{ padding: "0.4rem", textAlign: "right" }}>{money(p.net_cents, data!.base_currency)}</td>
+                  <td style={{ padding: "0.4rem", textAlign: "right" }}>{money(p.expenses_cents, data!.base_currency)}</td>
+                  <td style={{ padding: "0.4rem", color: "#6b7280" }}>{new Date(p.closed_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
 
       <section>
         <h2>Where it went</h2>
@@ -156,6 +232,85 @@ export default async function TransparencyPage() {
         )}
       </section>
     </main>
+  );
+}
+
+// Inline SVG stacked bar — avoids pulling a chart library onto a public
+// page. Colors are brand-neutral and WCAG-safe when paired with the labels
+// above the chart. The underlying numbers also appear in the table that
+// follows, which is the authoritative read for screen-reader users.
+function FundTypeChart({
+  items,
+  currency,
+}: {
+  items: Array<{ kind: string; name: string; balance_cents: number }>;
+  currency: string;
+}) {
+  const total = items.reduce((n, x) => n + Math.max(0, x.balance_cents), 0);
+  if (total === 0) return <p style={{ color: "#6b7280" }}>Fund balances are empty.</p>;
+  const palette: Record<string, string> = {
+    general: "#0ea5e9",
+    project: "#f59e0b",
+    restricted: "#8b5cf6",
+    endowment: "#10b981",
+  };
+  let x = 0;
+  const w = 100;
+  return (
+    <div>
+      <svg
+        viewBox="0 0 100 10"
+        role="img"
+        aria-label={`Balance by fund type: ${items.map((i) => `${i.name} ${((i.balance_cents / total) * 100).toFixed(0)}%`).join(", ")}`}
+        style={{ width: "100%", height: "28px", borderRadius: "6px", background: "#f3f4f6" }}
+      >
+        {items.map((f) => {
+          const pct = (Math.max(0, f.balance_cents) / total) * w;
+          const seg = (
+            <rect
+              key={f.kind}
+              x={x}
+              y={0}
+              width={pct}
+              height={10}
+              fill={palette[f.kind] ?? "#64748b"}
+            >
+              <title>{`${f.name}: ${(pct / w * 100).toFixed(1)}% (${currency} ${(f.balance_cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })})`}</title>
+            </rect>
+          );
+          x += pct;
+          return seg;
+        })}
+      </svg>
+      <ul
+        style={{
+          listStyle: "none",
+          padding: 0,
+          margin: "0.6rem 0 0",
+          display: "flex",
+          gap: "1rem",
+          flexWrap: "wrap",
+          fontSize: "0.85rem",
+          color: "#374151",
+        }}
+      >
+        {items.map((f) => (
+          <li key={f.kind} style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+            <span
+              aria-hidden="true"
+              style={{
+                display: "inline-block",
+                width: 10,
+                height: 10,
+                borderRadius: 2,
+                background: palette[f.kind] ?? "#64748b",
+              }}
+            />
+            {f.name}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
