@@ -8,6 +8,7 @@
     "dev": "tsx watch --env-file=.env src/server.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node --env-file=.env dist/server.js",
+    "start:prod": "tsx src/server.ts",
     "migrate": "tsx migrations/run.ts",
     "migrate:private": "tsx migrations/private/run.ts",
     "seed": "tsx migrations/seed.ts",
@@ -35,6 +36,7 @@
     "pino-http": "^10.3.0",
     "qrcode": "^1.5.4",
     "sarahs-foundation": "file:..",
+    "tsx": "^4.19.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -50,7 +52,6 @@
     "pdf-parse": "^1.1.1",
     "pino-pretty": "^11.3.0",
     "supertest": "^7.0.0",
-    "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"
   }
