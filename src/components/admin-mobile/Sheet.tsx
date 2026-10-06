@@ -28,6 +28,11 @@ const slideUp = keyframes`
   to { transform: translateY(0); }
 `;
 
+const fadeRise = keyframes`
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
 const Backdrop = styled.div`
   position: fixed;
   inset: 0;
@@ -44,7 +49,6 @@ const Panel = styled.div<{ $variant: SheetVariant }>`
   display: flex;
   flex-direction: column;
   box-shadow: var(--am-shadow-3);
-  animation: ${slideUp} var(--am-dur-slow) var(--am-ease-emphasis);
   max-height: 100dvh;
   outline: none;
 
@@ -57,10 +61,17 @@ const Panel = styled.div<{ $variant: SheetVariant }>`
           border-radius: var(--am-radius-xl) var(--am-radius-xl) 0 0;
           max-height: 90dvh;
           padding-bottom: env(safe-area-inset-bottom);
+          animation: ${slideUp} var(--am-dur-slow) var(--am-ease-emphasis);
         `
       : css`
           inset: 0;
+          animation: ${fadeRise} var(--am-dur-base) var(--am-ease-standard);
+          transform-origin: top center;
         `}
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: ${fadeIn} var(--am-dur-base) var(--am-ease-standard);
+  }
 `;
 
 const Grabber = styled.div`
