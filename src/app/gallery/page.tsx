@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 import { api } from "@/lib/api";
 import { Gallery, type GalleryPhoto } from "./Gallery";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Before &amp; after",

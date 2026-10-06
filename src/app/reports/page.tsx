@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "The quarterly and monthly impact reports Sarah's Foundation publishes — figures approved by finance, downloadable as tagged, accessible PDFs.",
 };
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
 
 type Item = {
   id: string;

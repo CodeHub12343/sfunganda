@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "How much of our operating costs are covered by the businesses we run — straight from the ledger, month by month.",
 };
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
 
 type MonthRow = {
   month: string;

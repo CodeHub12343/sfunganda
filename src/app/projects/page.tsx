@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: "Active projects by Sarah's Foundation.",
 };
 
+export const dynamic = "force-dynamic";
+
 type Row = {
   slug: string;
   name: string;

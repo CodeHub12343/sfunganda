@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Field reports and stories from Sarah's Foundation.",
 };
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 type VideoRow = {
   id: string;
