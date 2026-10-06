@@ -32,7 +32,7 @@ const CommunitySchema = new Schema<CommunityDoc>(
     status: {
       type: String,
       enum: ["planned", "active", "paused", "archived"],
-      default: "planned",
+      default: "active",
     },
     summary: { type: String, default: "", maxlength: 2000 },
     version: { type: Number, default: 0 },

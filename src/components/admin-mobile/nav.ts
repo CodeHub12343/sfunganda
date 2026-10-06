@@ -68,6 +68,13 @@ export const NAV: NavLink[] = [
     icon: "check-square",
   },
   {
+    label: "Accomplishments",
+    href: "/admin/accomplishments",
+    roles: ["founder", "director", "project_manager", "field_member"],
+    group: "ops",
+    icon: "file-text",
+  },
+  {
     label: "Media library",
     href: "/admin/media",
     roles: ["founder", "director", "media_manager", "project_manager"],
