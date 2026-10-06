@@ -87,11 +87,7 @@ function buildCsp(nonce: string): string {
     // without a nonce. In production we rely on the nonce — the Next
     // style injector tags its <style> elements with the request nonce,
     // and the one remaining inline <style> in layout.tsx also carries it.
-    `style-src ${self} ${
-      process.env.NODE_ENV === "production"
-        ? `'nonce-${nonce}'`
-        : "'unsafe-inline'"
-    } https://fonts.googleapis.com`,
+    `style-src ${self} 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src ${self} data: https://fonts.gstatic.com`,
     // Phase 2+ media hosts: public R2 derivatives CDN, private R2 for signed
     // downloads, and Cloudflare Stream for HLS playlists. Hosts come from
