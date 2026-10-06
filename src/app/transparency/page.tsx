@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Where donations go, project by project.",
 };
 
+export const dynamic = "force-dynamic";
+
 type Summary = {
   base_currency: string;
   totals: {
