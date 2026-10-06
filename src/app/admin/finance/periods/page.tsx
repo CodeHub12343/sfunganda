@@ -118,7 +118,7 @@ export default function PeriodsPage() {
                   ) : null}
                 </div>
                 <StatusBadge
-                  status={p.status === "closed" ? "suspended" : p.status === "pending_close" ? "pending" : "active"}
+                  tone={p.status === "closed" ? "danger" : p.status === "pending_close" ? "warning" : "success"}
                 >
                   {p.status}
                 </StatusBadge>
