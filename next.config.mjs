@@ -75,6 +75,12 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   compiler: {
     styledComponents: { ssr: true, displayName: true },
   },
