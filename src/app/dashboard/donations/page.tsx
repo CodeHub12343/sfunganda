@@ -147,7 +147,7 @@ export default function DonationsPage() {
             your verified email.
           </Lede>
         </HeaderText>
-        <HeaderCta href="/donate">Make another gift</HeaderCta>
+        <HeaderCta href="/#sponsor">Make another gift</HeaderCta>
       </Header>
 
       {stats ? (

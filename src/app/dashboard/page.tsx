@@ -52,7 +52,7 @@ export default function DashboardOverview() {
         </HeroLede>
         <HeroActions>
           <PrimaryBtn href="/projects">Discover projects</PrimaryBtn>
-          <GhostBtn href="/donate">Make a donation</GhostBtn>
+          <GhostBtn href="/#sponsor">Make a donation</GhostBtn>
         </HeroActions>
       </Hero>
 

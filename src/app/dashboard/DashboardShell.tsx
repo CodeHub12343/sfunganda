@@ -3,7 +3,7 @@
 import NextLink from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import styled from "styled-components";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { amMedia } from "@/components/admin-mobile/tokens";
 import { ToastProvider } from "@/components/ui/Toast";
 import { api } from "@/lib/api";
@@ -39,13 +39,17 @@ const Wrap = styled.div`
   }
 `;
 
-/* ---------------- Mobile top-nav (replaces hamburger) ---------------- */
+/* ---------------- Mobile top bar + slide-out sidebar ---------------- */
 
-const MobileNav = styled.nav`
+const MobileBar = styled.header`
   position: sticky;
   top: 0;
-  z-index: 10;
-  padding: 0.6rem 0.9rem 0.7rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
   background: ${({ theme }) => theme.gradients.trust};
   color: #fff;
   box-shadow: 0 6px 18px rgba(8, 23, 53, 0.14);
@@ -57,91 +61,225 @@ const MobileNav = styled.nav`
   }
 `;
 
-const MobileNavTop = styled.div`
+const MobileTitleGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+
+  small {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.colors.hopeGold};
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  h2 {
+    font-family: ${({ theme }) => theme.font.heading};
+    font-size: 1rem;
+    margin: 0.2rem 0 0;
+    color: #fff;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`;
+
+const Burger = styled.button`
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  cursor: pointer;
+  flex: 0 0 auto;
+
+  span,
+  span::before,
+  span::after {
+    content: "";
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: #fff;
+    position: relative;
+  }
+  span::before {
+    position: absolute;
+    top: -6px;
+  }
+  span::after {
+    position: absolute;
+    top: 6px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.hopeGold};
+    outline-offset: 2px;
+  }
+`;
+
+const Backdrop = styled.div<{ $open: boolean }>`
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(7, 17, 29, 0.55);
+  backdrop-filter: blur(2px);
+  opacity: ${({ $open }) => ($open ? 1 : 0)};
+  pointer-events: ${({ $open }) => ($open ? "auto" : "none")};
+  transition: opacity 220ms ease;
+
+  ${amMedia.md} {
+    display: none;
+  }
+`;
+
+const Sheet = styled.aside<{ $open: boolean }>`
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: min(320px, 86vw);
+  z-index: 100;
+  background: ${({ theme }) => theme.gradients.trust};
+  color: #fff;
+  padding: 1.25rem 1.1rem 1.5rem;
+  box-shadow: -12px 0 36px rgba(8, 23, 53, 0.3);
+  transform: translateX(${({ $open }) => ($open ? "0" : "100%")});
+  transition: transform 260ms ${({ theme }) => theme.ease.out};
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  ${amMedia.md} {
+    display: none;
+  }
+`;
+
+const SheetTop = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.55rem;
-  min-width: 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 
   h2 {
     font-family: ${({ theme }) => theme.font.heading};
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     margin: 0;
     color: #fff;
     font-weight: 700;
-    letter-spacing: 0.01em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
     flex: 1;
   }
+
+  small {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.colors.hopeGold};
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+  }
 `;
 
-const MobileSignOut = styled.button`
+const Close = styled.button`
   appearance: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
-  padding: 0.3rem 0.65rem;
-  font-size: 0.72rem;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
   cursor: pointer;
   flex: 0 0 auto;
-  white-space: nowrap;
 
   &:hover,
   &:focus-visible {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.18);
   }
 `;
 
-const TabRow = styled.div`
+const SheetNav = styled.nav`
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 1rem;
+`;
+
+const SheetLink = styled(NextLink)<{ $active: boolean }>`
   display: flex;
-  gap: 0.4rem;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  padding-bottom: 0.2rem;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const Tab = styled(NextLink)<{ $active: boolean }>`
-  flex: 0 0 auto;
-  display: inline-flex;
   align-items: center;
-  padding: 0.5rem 0.95rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
+  gap: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
   font-weight: 600;
   text-decoration: none;
-  white-space: nowrap;
-  transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+  transition: background 160ms ease, color 160ms ease;
 
   background: ${({ $active }) =>
     $active
       ? "linear-gradient(135deg, #F7B733 0%, #F28C28 100%)"
-      : "rgba(255, 255, 255, 0.08)"};
-  color: ${({ $active }) => ($active ? "#1a0f00" : "rgba(255,255,255,0.9)")};
+      : "rgba(255, 255, 255, 0.06)"};
+  color: ${({ $active }) => ($active ? "#1a0f00" : "#fff")};
   border: 1px solid
-    ${({ $active }) => ($active ? "transparent" : "rgba(255, 255, 255, 0.18)")};
-  box-shadow: ${({ $active }) =>
-    $active ? "0 6px 18px rgba(242, 140, 40, 0.35)" : "none"};
+    ${({ $active }) => ($active ? "transparent" : "rgba(255, 255, 255, 0.1)")};
 
   &:hover,
   &:focus-visible {
     background: ${({ $active }) =>
       $active
         ? "linear-gradient(135deg, #F7B733 0%, #F28C28 100%)"
-        : "rgba(255, 255, 255, 0.16)"};
-    color: ${({ $active }) => ($active ? "#1a0f00" : "#fff")};
+        : "rgba(255, 255, 255, 0.14)"};
+  }
+`;
+
+const SheetSignOut = styled.button`
+  margin-top: auto;
+  padding-top: 1rem;
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  text-align: left;
+  font-size: 0.92rem;
+  font-weight: 600;
+
+  span {
+    display: block;
+    padding: 0.75rem 0.9rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  &:hover span,
+  &:focus-visible span {
+    background: rgba(255, 255, 255, 0.14);
   }
 `;
 
@@ -259,9 +397,13 @@ const SignOutButton = styled.button`
 export function DashboardShell({ me, children }: { me: Me; children: React.ReactNode }) {
   const pathname = usePathname() ?? "";
   const router = useRouter();
+  const [open, setOpen] = useState(false);
 
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
+
+  const activeLabel =
+    [...NAV].reverse().find((n) => isActive(n.href))?.label ?? "Dashboard";
 
   const signOut = useCallback(async () => {
     try {
@@ -271,24 +413,91 @@ export function DashboardShell({ me, children }: { me: Me; children: React.React
     }
   }, [router]);
 
+  // Close on route change.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll + Escape to close.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
     <ToastProvider>
       <Wrap>
-        <MobileNav aria-label="Dashboard sections">
-          <MobileNavTop>
-            <h2>{me.user?.display_name ?? "Dashboard"}</h2>
-            <MobileSignOut type="button" onClick={signOut}>
-              Sign out
-            </MobileSignOut>
-          </MobileNavTop>
-          <TabRow role="tablist">
+        <MobileBar>
+          <MobileTitleGroup>
+            <small>Your dashboard</small>
+            <h2>{activeLabel}</h2>
+          </MobileTitleGroup>
+          <Burger
+            type="button"
+            aria-label="Open menu"
+            aria-expanded={open}
+            aria-controls="dashboard-sheet"
+            onClick={() => setOpen(true)}
+          >
+            <span />
+          </Burger>
+        </MobileBar>
+
+        <Backdrop $open={open} onClick={() => setOpen(false)} aria-hidden={!open} />
+
+        <Sheet
+          id="dashboard-sheet"
+          $open={open}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Dashboard menu"
+          aria-hidden={!open}
+        >
+          <SheetTop>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <small>Signed in</small>
+              <h2>{me.user?.display_name ?? "Dashboard"}</h2>
+            </div>
+            <Close
+              type="button"
+              aria-label="Close menu"
+              onClick={() => setOpen(false)}
+            >
+              ✕
+            </Close>
+          </SheetTop>
+
+          <SheetNav aria-label="Dashboard">
             {NAV.map((n) => (
-              <Tab key={n.href} href={n.href} $active={isActive(n.href)} role="tab">
+              <SheetLink
+                key={n.href}
+                href={n.href}
+                $active={isActive(n.href)}
+                onClick={() => setOpen(false)}
+                tabIndex={open ? 0 : -1}
+              >
                 {n.label}
-              </Tab>
+              </SheetLink>
             ))}
-          </TabRow>
-        </MobileNav>
+          </SheetNav>
+
+          <SheetSignOut
+            type="button"
+            onClick={signOut}
+            tabIndex={open ? 0 : -1}
+          >
+            <span>Sign out</span>
+          </SheetSignOut>
+        </Sheet>
 
         <Aside aria-label="Dashboard">
           <AsideHeader>
