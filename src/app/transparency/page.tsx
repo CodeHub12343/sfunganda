@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { ChildrensFundSummary } from "@/components/children-fund/PublicSummary";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { PublicPageHero } from "@/components/layout/PublicPageHero";
+import { Container, Section } from "@/components/ui/Container";
 
 export const metadata: Metadata = {
   title: "Transparency — Sarah's Foundation",
@@ -70,10 +74,17 @@ export default async function TransparencyPage() {
 
   if (!data) {
     return (
-      <main style={{ maxWidth: 960, margin: "0 auto", padding: "3rem 1.25rem 5rem" }}>
-        <h1>Transparency</h1>
-        <p>Financial data is not available right now.</p>
-      </main>
+      <>
+        <Navbar />
+        <main>
+          <PublicPageHero
+            eyebrow="Where it goes"
+            title="Transparency"
+            description="Financial data is not available right now."
+          />
+        </main>
+        <Footer />
+      </>
     );
   }
 
@@ -83,12 +94,16 @@ export default async function TransparencyPage() {
       : 0;
 
   return (
-    <main style={{ maxWidth: 960, margin: "0 auto", padding: "3rem 1.25rem 5rem" }}>
-      <h1 style={{ fontSize: "2.25rem", marginBottom: "0.4rem" }}>Transparency</h1>
-      <p style={{ color: "#6b7280" }}>
-        As of {new Date(data.as_of).toLocaleString()} · {data.base_currency} is our reporting currency.
-      </p>
-
+    <>
+      <Navbar />
+      <main>
+        <PublicPageHero
+          eyebrow="Where it goes"
+          title="Every dollar, accounted for"
+          description={`As of ${new Date(data.as_of).toLocaleString()} · ${data.base_currency} is our reporting currency.`}
+        />
+        <Section>
+          <Container>
       <section
         style={{
           display: "grid",
@@ -236,7 +251,11 @@ export default async function TransparencyPage() {
           </ul>
         )}
       </section>
-    </main>
+          </Container>
+        </Section>
+      </main>
+      <Footer />
+    </>
   );
 }
 
