@@ -21,6 +21,10 @@ export type LedgerEntryDoc = {
   memo: string | null;
   project_id: mongoose.Types.ObjectId | null;
   expense_category_id: mongoose.Types.ObjectId | null;
+  // Phase 8: business dimension. Any ledger entry whose source was a business
+  // production record (approved → posted) carries this reference so the
+  // sustainability aggregation can walk business_id and account prefix alone.
+  business_id: mongoose.Types.ObjectId | null;
   posted_at: Date;
   // Hash chain
   prev_hash: string; // hex-encoded sha256 of the preceding entry, or seed hash for seq=1
@@ -42,6 +46,7 @@ const LedgerEntrySchema = new Schema<LedgerEntryDoc>(
     memo: { type: String, default: null, maxlength: 500 },
     project_id: { type: Schema.Types.ObjectId, ref: "Project", default: null },
     expense_category_id: { type: Schema.Types.ObjectId, ref: "ExpenseCategory", default: null },
+    business_id: { type: Schema.Types.ObjectId, ref: "Business", default: null },
     posted_at: { type: Date, required: true },
     prev_hash: { type: String, required: true, maxlength: 64 },
     hash: { type: String, required: true, maxlength: 64 },
@@ -57,6 +62,7 @@ LedgerEntrySchema.index({ transaction_id: 1 });
 LedgerEntrySchema.index({ organization_id: 1, account: 1, posted_at: -1 });
 LedgerEntrySchema.index({ organization_id: 1, fund_id: 1, posted_at: -1 });
 LedgerEntrySchema.index({ project_id: 1, posted_at: -1 }, { sparse: true });
+LedgerEntrySchema.index({ organization_id: 1, business_id: 1, posted_at: -1 }, { sparse: true });
 LedgerEntrySchema.index({ hash: 1 }, { unique: true });
 
 export const LedgerEntry =

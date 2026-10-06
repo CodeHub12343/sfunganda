@@ -1,7 +1,74 @@
 "use client";
 
 import { useState } from "react";
+import NextLink from "next/link";
+import styled from "styled-components";
 import { api, ApiClientError } from "@/lib/api";
+import { Field, Input, Checkbox } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { media } from "@/styles/theme";
+
+const Panel = styled.form`
+  padding: 1.5rem;
+  border-radius: ${({ theme }) => theme.radius.lg};
+  background: ${({ theme }) => theme.colors.bg};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: ${({ theme }) => theme.shadow.glass};
+  display: grid;
+  gap: 1rem;
+  ${media.sm} {
+    padding: 2rem;
+  }
+  ${media.md} {
+    padding: 2.5rem;
+  }
+`;
+
+const Success = styled.div`
+  padding: 2rem;
+  border-radius: ${({ theme }) => theme.radius.lg};
+  background: ${({ theme }) => theme.colors.warmCream};
+  border: 1px solid ${({ theme }) => theme.colors.foundationGreen};
+  box-shadow: ${({ theme }) => theme.shadow.soft};
+  h2 {
+    margin: 0 0 0.6rem;
+    color: ${({ theme }) => theme.colors.trustBlue};
+    font-family: ${({ theme }) => theme.font.heading};
+  }
+  p {
+    color: ${({ theme }) => theme.colors.inkSoft};
+    margin: 0 0 0.6rem;
+  }
+`;
+
+const FormError = styled.p`
+  color: ${({ theme }) => theme.colors.sunriseOrange};
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  padding: 0.6rem 0.8rem;
+  border-radius: ${({ theme }) => theme.radius.md};
+  margin: 0;
+  font-size: 0.9rem;
+`;
+
+const Reassure = styled.p`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.inkMuted};
+  text-align: center;
+  margin: 0;
+`;
+
+const Hint = styled.p`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.inkSoft};
+  margin: 0;
+  a {
+    color: ${({ theme }) => theme.colors.trustBlue};
+    font-weight: ${({ theme }) => theme.weight.semibold};
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+`;
 
 export function SignupForm() {
   const [state, setState] = useState<"idle" | "submitting" | "sent" | "error">("idle");
@@ -19,6 +86,7 @@ export function SignupForm() {
     e.preventDefault();
     if (!form.consent) {
       setErr("Please accept the privacy notice to continue.");
+      setState("error");
       return;
     }
     setErr(null);
@@ -43,71 +111,72 @@ export function SignupForm() {
 
   if (state === "sent") {
     return (
-      <div
-        role="status"
-        style={{
-          background: "#ecfdf5",
-          border: "1px solid #10b981",
-          borderRadius: 10,
-          padding: "1.5rem",
-        }}
-      >
-        <h2 style={{ marginTop: 0 }}>Check your email</h2>
+      <Success role="status">
+        <h2>Welcome aboard!</h2>
         <p>
-          If an account can be created with that address, we&apos;ve sent a confirmation link.
-          Click it to finish setting up your account.
+          Your supporter account is ready. Sign in with the email and password
+          you just chose to start following projects and tracking donations.
         </p>
-        <p style={{ color: "#6b7280", fontSize: "0.9rem", margin: 0 }}>
-          Don&apos;t see it? Check your spam folder, or request another one from the verification page.
+        <p>
+          <NextLink href="/sign-in">Go to sign in →</NextLink>
         </p>
-      </div>
+      </Success>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: "0.9rem" }}>
-      {err ? <p style={{ color: "#dc2626" }}>{err}</p> : null}
-      <label>
-        <span style={labelStyle}>Email</span>
-        <input
-          type="email"
-          required
-          autoComplete="email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          style={inputStyle}
-        />
-      </label>
-      <label>
-        <span style={labelStyle}>Display name</span>
-        <input
-          required
-          autoComplete="name"
-          value={form.display_name}
-          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-          style={inputStyle}
-        />
-      </label>
-      <label>
-        <span style={labelStyle}>Password (12+ characters)</span>
-        <input
-          type="password"
-          required
-          minLength={12}
-          autoComplete="new-password"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          style={inputStyle}
-        />
-      </label>
-      <label>
-        <span style={labelStyle}>Country (optional)</span>
-        <input
-          value={form.country}
-          onChange={(e) => setForm({ ...form, country: e.target.value })}
-          style={inputStyle}
-        />
-      </label>
+    <Panel onSubmit={onSubmit} noValidate>
+      {err ? <FormError>{err}</FormError> : null}
+
+      <Field label="Email" required>
+        {(p) => (
+          <Input
+            {...p}
+            type="email"
+            required
+            autoComplete="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+        )}
+      </Field>
+
+      <Field label="Display name" required>
+        {(p) => (
+          <Input
+            {...p}
+            required
+            autoComplete="name"
+            value={form.display_name}
+            onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+          />
+        )}
+      </Field>
+
+      <Field label="Password (12+ characters)" required>
+        {(p) => (
+          <Input
+            {...p}
+            type="password"
+            required
+            minLength={12}
+            autoComplete="new-password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+        )}
+      </Field>
+
+      <Field label="Country">
+        {(p) => (
+          <Input
+            {...p}
+            value={form.country}
+            onChange={(e) => setForm({ ...form, country: e.target.value })}
+          />
+        )}
+      </Field>
+
       {/* Honeypot — hidden from humans. */}
       <input
         type="text"
@@ -117,41 +186,27 @@ export function SignupForm() {
         value={form.website}
         onChange={(e) => setForm({ ...form, website: e.target.value })}
         style={{ position: "absolute", left: "-9999px", width: 0, height: 0, opacity: 0 }}
+        aria-hidden
       />
-      <label style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start", fontSize: "0.9rem" }}>
-        <input
-          type="checkbox"
-          checked={form.consent}
-          onChange={(e) => setForm({ ...form, consent: e.target.checked })}
-        />
-        <span>
-          I agree to Sarah&apos;s Foundation&apos;s privacy notice and understand that my email is
-          used to send me the updates I subscribe to.
-        </span>
-      </label>
-      <button
-        type="submit"
-        disabled={state === "submitting"}
-        style={{
-          padding: "0.9rem",
-          background: "#111827",
-          color: "#fff",
-          border: 0,
-          borderRadius: 10,
-          fontWeight: 600,
-          cursor: "pointer",
-        }}
+
+      <Checkbox
+        checked={form.consent}
+        onChange={(v) => setForm({ ...form, consent: v })}
       >
-        {state === "submitting" ? "Creating…" : "Create account"}
-      </button>
-    </form>
+        I agree to Sarah&apos;s Foundation&apos;s privacy notice and
+        understand my email is used to send the updates I subscribe to.
+      </Checkbox>
+
+      <Button type="submit" variant="primary" disabled={state === "submitting"} full>
+        {state === "submitting" ? "Creating account…" : "Create account →"}
+      </Button>
+
+      <Reassure>
+        🔒 Your details are kept private. Unsubscribe at any time.
+      </Reassure>
+      <Hint>
+        Already have an account? <NextLink href="/sign-in">Sign in</NextLink>
+      </Hint>
+    </Panel>
   );
 }
-
-const labelStyle: React.CSSProperties = { display: "block", color: "#6b7280", fontSize: "0.85rem" };
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "0.65rem",
-  border: "1px solid #e5e7eb",
-  borderRadius: 8,
-};

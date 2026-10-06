@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { SignupHero } from "./SignupHero";
 import { SignupForm } from "./SignupForm";
 
 export const metadata: Metadata = {
@@ -9,12 +12,14 @@ export const metadata: Metadata = {
 
 export default function SupporterSignupPage() {
   return (
-    <main style={{ maxWidth: 480, margin: "0 auto", padding: "3rem 1.25rem" }}>
-      <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>Join as a supporter</h1>
-      <p style={{ color: "#6b7280", marginBottom: "1.5rem" }}>
-        Follow projects, receive updates, and keep a copy of your donation receipts.
-      </p>
-      <SignupForm />
-    </main>
+    <>
+      <Navbar />
+      <main style={{ paddingTop: "72px" }}>
+        <SignupHero>
+          <SignupForm />
+        </SignupHero>
+      </main>
+      <Footer />
+    </>
   );
 }

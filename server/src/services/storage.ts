@@ -1,7 +1,109 @@
 import { createHash, createHmac } from "node:crypto";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { dirname, resolve, sep as pathSep } from "node:path";
 import { env } from "@/config/env.js";
 import { AppError } from "@/util/errors.js";
 import { log } from "@/util/log.js";
+
+// ---- Local-filesystem fallback (dev only) ----------------------------------
+// When no R2 credentials are configured and we're not in production, uploads
+// are kept on local disk so the full media pipeline (ticket → PUT → complete
+// → worker read/write) works end-to-end without a real object store. Enabled
+// implicitly on first use; see `isLocalMode()`.
+
+const LOCAL_ROOT = resolve(process.cwd(), ".uploads");
+const LOCAL_SIGNING_KEY =
+  process.env.LOCAL_UPLOAD_SIGNING_KEY ??
+  process.env.INTERNAL_PROXY_SECRET ??
+  "dev-local-upload";
+
+export function isStorageConfigured(): boolean {
+  return Boolean(
+    env.R2_ENDPOINT && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY
+  );
+}
+
+export function isLocalMode(): boolean {
+  return !isStorageConfigured() && process.env.NODE_ENV !== "production";
+}
+
+function localPath(bucket: string, key: string): string {
+  // Confine to LOCAL_ROOT; reject any key that would escape via "..".
+  const full = resolve(LOCAL_ROOT, bucket, key);
+  if (!full.startsWith(LOCAL_ROOT + pathSep) && full !== LOCAL_ROOT) {
+    throw new AppError("bad_request", "invalid storage key");
+  }
+  return full;
+}
+
+function signLocalUrl(bucket: string, key: string, exp: number): string {
+  const payload = `${bucket}:${key}:${exp}`;
+  return createHmac("sha256", LOCAL_SIGNING_KEY).update(payload).digest("hex");
+}
+
+export function verifyLocalUrl(
+  bucket: string,
+  key: string,
+  exp: number,
+  sig: string
+): boolean {
+  if (!Number.isFinite(exp) || exp < Date.now() / 1000) return false;
+  const expected = signLocalUrl(bucket, key, exp);
+  // Constant-time compare.
+  if (expected.length !== sig.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ sig.charCodeAt(i);
+  return diff === 0;
+}
+
+function localPresignUrl(
+  method: "GET" | "PUT",
+  bucket: string,
+  key: string,
+  ttlSeconds: number
+): string {
+  const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
+  const sig = signLocalUrl(bucket, key, exp);
+  // Returned as a relative URL. The browser XHR issues the request to the
+  // same origin as the Next.js page, which rewrites /api/v1/* to this API.
+  const bucketEnc = encodeURIComponent(bucket);
+  const keyEnc = key.split("/").map(encodeURIComponent).join("/");
+  const base = `/api/v1/media/local/${bucketEnc}/${keyEnc}`;
+  return `${base}?exp=${exp}&sig=${sig}&m=${method}`;
+}
+
+async function localPutObject(
+  bucket: string,
+  key: string,
+  body: Buffer | Uint8Array
+): Promise<void> {
+  const p = localPath(bucket, key);
+  await mkdir(dirname(p), { recursive: true });
+  await writeFile(p, body);
+}
+
+async function localGetObject(bucket: string, key: string): Promise<Buffer | null> {
+  try {
+    return await readFile(localPath(bucket, key));
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw e;
+  }
+}
+
+async function localDeleteObject(bucket: string, key: string): Promise<void> {
+  try {
+    await unlink(localPath(bucket, key));
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
+}
+
+// `__localRoot` is exported for the HTTP handler that serves and accepts the
+// local PUT/GET; see server/src/routes/media.ts.
+export const __localRoot = LOCAL_ROOT;
+export { localPath as __localPath };
+export { localPutObject as __localPutObject, localGetObject as __localGetObject };
 
 // =============================================================================
 // S3-compatible storage (Cloudflare R2). We don't take a 500 KB SDK on just
@@ -83,6 +185,9 @@ export function presignUrl(opts: {
   responseContentDisposition?: string;
   query?: Record<string, string>;
 }): string {
+  if (isLocalMode() && (opts.method === "GET" || opts.method === "PUT")) {
+    return localPresignUrl(opts.method, opts.bucket, opts.key, opts.ttlSeconds);
+  }
   assertConfigured();
   const host = endpointHost();
   const region = env.R2_REGION;
@@ -214,6 +319,11 @@ export async function initMultipartUpload(
   key: string,
   contentType: string
 ): Promise<string> {
+  if (isLocalMode()) {
+    // Multipart isn't needed on local disk — a single PUT works for any size.
+    // Return a synthetic id; the local complete-handler ignores it.
+    return `local-${Date.now()}`;
+  }
   const res = await signedRequest("POST", `/${bucket}/${key}`, {
     query: { uploads: "" },
     contentType,
@@ -251,6 +361,10 @@ export async function completeMultipartUpload(
   uploadId: string,
   parts: Array<{ part_number: number; etag: string }>
 ): Promise<void> {
+  if (isLocalMode()) {
+    // Nothing to finalise — the local PUT handler wrote the whole file.
+    return;
+  }
   const sorted = [...parts].sort((a, b) => a.part_number - b.part_number);
   const body = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -278,10 +392,18 @@ export async function abortMultipartUpload(
   key: string,
   uploadId: string
 ): Promise<void> {
+  if (isLocalMode()) {
+    await localDeleteObject(bucket, key);
+    return;
+  }
   await signedRequest("DELETE", `/${bucket}/${key}`, { query: { uploadId } }).catch(() => undefined);
 }
 
 export async function deleteObject(bucket: string, key: string): Promise<void> {
+  if (isLocalMode()) {
+    await localDeleteObject(bucket, key);
+    return;
+  }
   const res = await signedRequest("DELETE", `/${bucket}/${key}`);
   if (!res.ok && res.status !== 404) {
     const text = await res.text().catch(() => "");
@@ -290,6 +412,9 @@ export async function deleteObject(bucket: string, key: string): Promise<void> {
 }
 
 export async function getObject(bucket: string, key: string): Promise<Buffer | null> {
+  if (isLocalMode()) {
+    return localGetObject(bucket, key);
+  }
   const res = await signedRequest("GET", `/${bucket}/${key}`);
   if (res.status === 404) return null;
   if (!res.ok) {
@@ -306,6 +431,10 @@ export async function putObject(
   body: Buffer,
   contentType: string
 ): Promise<void> {
+  if (isLocalMode()) {
+    await localPutObject(bucket, key, body);
+    return;
+  }
   const res = await signedRequest("PUT", `/${bucket}/${key}`, { body, contentType });
   if (!res.ok) {
     const text = await res.text().catch(() => "");

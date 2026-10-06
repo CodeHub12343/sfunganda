@@ -17,9 +17,16 @@ router.get(
     // Public feed — scope to the single primary organization. Multi-org
     // support goes through a slug once Phase 1's slug surface is wired to
     // the public site.
-    const org = await Organization.findOne().sort({ _id: 1 }).lean();
-    if (!org) throw new AppError("not_found", "no organization");
-    const items = await publicVideos(org._id.toString());
+    const tenant = (_req as unknown as { org?: { id: import("mongoose").Types.ObjectId } }).org;
+    let orgId: import("mongoose").Types.ObjectId;
+    if (tenant) {
+      orgId = tenant.id;
+    } else {
+      const org = await Organization.findOne().sort({ _id: 1 }).lean();
+      if (!org) throw new AppError("not_found", "no organization");
+      orgId = org._id;
+    }
+    const items = await publicVideos(orgId.toString());
     const data = await Promise.all(
       items.map(async (a) => {
         let url: string | null = null;

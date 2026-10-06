@@ -7,6 +7,14 @@ export type ProjectStatus = z.infer<typeof projectStatus>;
 export const milestoneStatus = z.enum(["planned", "in_progress", "complete", "cancelled"]);
 export type MilestoneStatus = z.infer<typeof milestoneStatus>;
 
+export const communityCreateBody = z.object({
+  name: nonEmpty(160),
+  slug: slug,
+  region_label: nonEmpty(160),
+  summary: z.string().max(2000).optional(),
+});
+export type CommunityCreateBody = z.infer<typeof communityCreateBody>;
+
 export const projectCategoryBody = z.object({
   name: nonEmpty(120),
   slug: slug,

@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/Button";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCounter } from "@/components/ui/StatCounter";
 import { Sunrise } from "@/components/motion/Sunrise";
-import { hero } from "@/data/content";
+import { hero as fallbackHero } from "@/data/content";
+
+type HeroOverride = {
+  eyebrow?: string;
+  subhead?: string;
+};
 import { media } from "@/styles/theme";
 
 const Wrap = styled.section`
@@ -142,7 +147,12 @@ const chipPos = [
   { bottom: "4%", left: "6%" },
 ];
 
-export function Hero() {
+export function Hero({ brand }: { brand?: HeroOverride } = {}) {
+  const hero = {
+    ...fallbackHero,
+    eyebrow: brand?.eyebrow || fallbackHero.eyebrow,
+    subhead: brand?.subhead || fallbackHero.subhead,
+  };
   const reduce = useReducedMotion();
 
   return (

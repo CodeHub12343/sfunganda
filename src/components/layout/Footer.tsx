@@ -48,7 +48,10 @@ const Grid = styled.div`
   gap: 3rem;
   grid-template-columns: 1fr;
   ${media.md} {
-    grid-template-columns: 1.4fr repeat(3, minmax(0, 1fr));
+    grid-template-columns: 1.4fr repeat(2, minmax(0, 1fr));
+  }
+  ${media.lg} {
+    grid-template-columns: 1.4fr repeat(4, minmax(0, 1fr));
   }
 `;
 
@@ -148,6 +151,11 @@ export function Footer() {
             {brand.pillars.map((p) => (
               <span key={p}>{p}</span>
             ))}
+            {/* Staff and supporter sign-in — second entry point so admins
+                can always find the login from any page. */}
+            <NextLink href="/sign-in" style={{ marginLeft: "0.5rem", opacity: 0.9 }}>
+              Staff sign in
+            </NextLink>
           </Pillars>
         </Bottom>
       </Container>

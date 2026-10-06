@@ -15,7 +15,6 @@ import {
   type LogicalBucket,
 } from "./storage.js";
 import { allowedMimeForKind } from "./mediaProcessing.js";
-import { createDirectUpload } from "./videoProvider.js";
 import { enqueue } from "./outbox.js";
 import type { Actor } from "@/policy/index.js";
 import { can } from "@/policy/index.js";
@@ -51,9 +50,10 @@ export function maxBytesForKind(kind: MediaKind): number {
 
 function logicalBucketFor(kind: MediaKind, visibility: MediaVisibility): LogicalBucket {
   if (kind === "document") return "documents";
-  // Originals always go to the private bucket; derivatives (public) are
-  // produced by the worker and written into the derivatives bucket.
-  if (visibility === "public" && kind !== "video") return "originals";
+  // Public videos go straight to the derivatives bucket so they can be served
+  // over the public r2.dev / CDN URL without a per-request signing round-trip
+  // (we have no transcoding step — the raw .mp4 is what plays).
+  if (kind === "video" && visibility === "public") return "derivatives";
   return "originals";
 }
 
@@ -84,42 +84,10 @@ export async function createTicket(input: {
 
   const orgId = new mongoose.Types.ObjectId(input.actor.organization_id);
 
-  // Video via provider — create a Cloudflare Stream direct-upload URL.
-  if (input.kind === "video" && input.via_provider) {
-    const stream = await createDirectUpload({
-      maxBytes: input.bytes,
-      expirySeconds: env.R2_UPLOAD_URL_TTL_SECONDS,
-    });
-    const asset = await MediaAsset.create({
-      organization_id: orgId,
-      kind: "video",
-      status: "uploading",
-      visibility: input.visibility,
-      bucket: "stream",
-      key: stream.provider_asset_id,
-      mime_declared: input.mime,
-      bytes: input.bytes,
-      original_filename: input.filename,
-      alt_text: input.alt_text ?? null,
-      uploaded_by: new mongoose.Types.ObjectId(input.actor.user_id),
-      provider: {
-        name: "stream",
-        asset_id: stream.provider_asset_id,
-        playback_id: null,
-        ready: false,
-      },
-    });
-    await maybeLink(asset._id, orgId, input.link, input.actor.user_id);
-    return {
-      asset_id: asset._id.toString(),
-      kind: "video",
-      provider_upload_url: stream.upload_url,
-      provider_asset_id: stream.provider_asset_id,
-      bucket: "stream",
-      key: stream.provider_asset_id,
-      expires_at: new Date(Date.now() + env.R2_UPLOAD_URL_TTL_SECONDS * 1000).toISOString(),
-    };
-  }
+  // `via_provider` previously requested a Cloudflare Stream direct upload.
+  // Stream has been removed (no budget); the flag is now a no-op — videos
+  // go through the same R2 presigned-upload path as photos and documents.
+  void input.via_provider;
 
   const logical = logicalBucketFor(input.kind, input.visibility);
   const bucket = bucketName(logical);
@@ -211,14 +179,6 @@ export async function completeUpload(input: {
     throw new AppError("forbidden", "wrong organization");
   if (asset.status !== "uploading") throw new AppError("conflict", "asset is not in uploading state");
 
-  if (asset.provider.name === "stream") {
-    // The provider webhook finalizes Stream assets. For client-side
-    // completion we only mark pending — the webhook flips to ready.
-    asset.status = "pending_processing";
-    await asset.save();
-    return asset.toObject();
-  }
-
   if (asset.upload.multipart_upload_id) {
     const parts = input.parts;
     if (!parts || parts.length === 0) throw new AppError("bad_request", "parts required");
@@ -226,15 +186,14 @@ export async function completeUpload(input: {
     asset.upload.parts_received = parts.length;
     asset.upload.multipart_upload_id = null;
   }
-  asset.status = "pending_scan";
   asset.uploaded_at = new Date();
+  // Worker is disabled, so there is no media.process job to run. Finalize
+  // every kind inline: trust the uploader's declared MIME, skip virus scan,
+  // skip EXIF stripping, skip derivatives. The raw object in R2 is what gets
+  // served (progressive .mp4 for video, original .jpg/.png for photos).
+  asset.status = "ready";
+  if (asset.kind === "video") asset.provider.ready = true;
   await asset.save();
-
-  await enqueue({
-    organization_id: asset.organization_id,
-    topic: "media.process",
-    payload: { asset_id: asset._id.toString() },
-  });
   return asset.toObject();
 }
 
@@ -350,6 +309,30 @@ export async function publicVideos(organization_id: string): Promise<MediaAssetD
     .sort({ _id: -1 })
     .limit(50)
     .lean<MediaAssetDoc[]>();
+}
+
+// Public photo library — surfaces assets uploaded through /admin/media that
+// an editor marked `visibility: public`. Without this, a standalone photo
+// upload has no public viewing surface unless it is attached to an
+// accomplishment, report, or social post.
+export async function publicPhotos(
+  organization_id: string,
+  opts: { limit?: number; cursor?: string | null } = {}
+): Promise<{ items: MediaAssetDoc[]; next_cursor: string | null }> {
+  const q: Record<string, unknown> = {
+    organization_id: new mongoose.Types.ObjectId(organization_id),
+    kind: "photo",
+    status: "ready",
+    visibility: "public",
+  };
+  if (opts.cursor) q._id = { $lt: new mongoose.Types.ObjectId(opts.cursor) };
+  const limit = Math.min(60, Math.max(1, opts.limit ?? 48));
+  const rows = await MediaAsset.find(q)
+    .sort({ _id: -1 })
+    .limit(limit + 1)
+    .lean<MediaAssetDoc[]>();
+  const next_cursor = rows.length > limit ? rows[limit - 1]._id.toString() : null;
+  return { items: rows.slice(0, limit), next_cursor };
 }
 
 export async function markProviderReady(asset_id: string, playback_id: string | null): Promise<void> {

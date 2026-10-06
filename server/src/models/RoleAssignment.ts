@@ -9,6 +9,10 @@ export const ROLES = [
   "media_manager",
   "field_member",
   "supporter",
+  // Phase 11 — named safeguarding lead. Grants viewer access to the
+  // children's future fund alongside the founder; approval of
+  // distributions still requires the founder.
+  "safeguarding_lead",
 ] as const;
 export type Role = (typeof ROLES)[number];
 

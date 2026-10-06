@@ -85,3 +85,14 @@ export async function touchSession(session_id: mongoose.Types.ObjectId): Promise
 export async function revokeSession(session_id: mongoose.Types.ObjectId): Promise<void> {
   await Session.updateOne({ _id: session_id }, { $set: { revoked_at: new Date() } });
 }
+
+export async function markStepUp(session_id: mongoose.Types.ObjectId): Promise<void> {
+  await Session.updateOne({ _id: session_id }, { $set: { step_up_verified_at: new Date() } });
+}
+
+export async function readSessionStepUp(
+  session_id: mongoose.Types.ObjectId
+): Promise<Date | null> {
+  const row = await Session.findOne({ _id: session_id }, { step_up_verified_at: 1 }).lean();
+  return (row?.step_up_verified_at as Date | null) ?? null;
+}

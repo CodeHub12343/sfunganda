@@ -210,6 +210,11 @@ export type TransitionInput = {
   version: number;
   note?: string;
   safeguarding?: Record<string, boolean>;
+  // §17.2 step 6 — approvers of an ai_assisted item must tick "I have
+  // checked this against the field report". The service refuses the
+  // transition without it. Stored on the accomplishment so later audits
+  // can prove the check was done.
+  ai_attestation?: boolean;
 };
 
 export async function transition(
@@ -248,6 +253,28 @@ export async function transition(
       // Stamp per-transition fields.
       const now = new Date();
       const uid = new mongoose.Types.ObjectId(actor.user_id);
+
+      // §17 attestation gate — the APPROVAL step (not publish) is where
+      // the reviewer confirms facts against the field report, because
+      // approve is where the content is actually scrutinised. We also
+      // guard publish defensively.
+      if (
+        (input.transition === "approve" || input.transition === "publish") &&
+        doc.ai_assisted
+      ) {
+        const alreadyAttested = Boolean(doc.ai_attestation_at);
+        if (!input.ai_attestation && !alreadyAttested) {
+          throw new AppError(
+            "unprocessable",
+            "AI-assisted content requires an attestation",
+            { fields: { ai_attestation: "must be acknowledged" } }
+          );
+        }
+        if (input.ai_attestation && !alreadyAttested) {
+          doc.ai_attestation_by = uid;
+          doc.ai_attestation_at = now;
+        }
+      }
       if (input.transition === "submit") {
         doc.submitted_by = uid;
         doc.submitted_at = now;
@@ -362,6 +389,18 @@ export async function transition(
           {
             organization_id: orgId,
             topic: "notification.fanout_accomplishment_published",
+            payload: { accomplishment_id: doc._id.toString() },
+          },
+          session
+        );
+        // Phase 12 — social cross-post fan-out. One event (one handler
+        // tick) that creates per-connection rows; each row is then
+        // posted independently through `social.post`. Failures NEVER
+        // roll back this publish (§14.7).
+        await enqueue(
+          {
+            organization_id: orgId,
+            topic: "social.fanout_accomplishment_published",
             payload: { accomplishment_id: doc._id.toString() },
           },
           session

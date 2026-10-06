@@ -44,6 +44,14 @@ export type AccomplishmentDoc = {
   published_at: Date | null;
   rejected_at: Date | null;
 
+  // Phase 10 — AI assist. `ai_assisted` is set whenever a generation was
+  // accepted (fully or partially) into the draft. Publishing an ai_assisted
+  // item requires an attestation from the approver (§17.2 step 6).
+  ai_assisted: boolean;
+  ai_generation_ids: mongoose.Types.ObjectId[];
+  ai_attestation_by: mongoose.Types.ObjectId | null;
+  ai_attestation_at: Date | null;
+
   version: number;
   created_at: Date;
   updated_at: Date;
@@ -98,6 +106,11 @@ const AccomplishmentSchema = new Schema<AccomplishmentDoc>(
     published_by: { type: Schema.Types.ObjectId, ref: "User", default: null },
     published_at: { type: Date, default: null },
     rejected_at: { type: Date, default: null },
+
+    ai_assisted: { type: Boolean, default: false },
+    ai_generation_ids: { type: [Schema.Types.ObjectId], ref: "AiGeneration", default: [] },
+    ai_attestation_by: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    ai_attestation_at: { type: Date, default: null },
 
     version: { type: Number, default: 0 },
   },

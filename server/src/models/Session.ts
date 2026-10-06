@@ -12,6 +12,10 @@ export type SessionDoc = {
   last_seen_at: Date;
   expires_at: Date;
   revoked_at: Date | null;
+  // Phase 11 — step-up MFA. Set to the time the user last re-entered a
+  // TOTP code to view/edit beneficiary records. The requireStepUp
+  // middleware checks it's within BENEFICIARY_STEPUP_TTL_SECONDS of now.
+  step_up_verified_at: Date | null;
 };
 
 const SessionSchema = new Schema<SessionDoc>(
@@ -26,6 +30,7 @@ const SessionSchema = new Schema<SessionDoc>(
     last_seen_at: { type: Date, required: true, default: () => new Date() },
     expires_at: { type: Date, required: true },
     revoked_at: { type: Date, default: null },
+    step_up_verified_at: { type: Date, default: null },
   },
   { collection: "sessions" }
 );

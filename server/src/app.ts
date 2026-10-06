@@ -17,6 +17,7 @@ import volunteersRoutes from "./routes/volunteers.js";
 import healthRoutes from "./routes/health.js";
 import mediaRoutes from "./routes/media.js";
 import videosRoutes from "./routes/videos.js";
+import photosRoutes from "./routes/photos.js";
 import mediaWebhookRoutes from "./routes/mediaWebhooks.js";
 import projectsRoutes from "./routes/projects.js";
 import accomplishmentsRoutes from "./routes/accomplishments.js";
@@ -25,8 +26,18 @@ import publicPortalRoutes from "./routes/publicPortal.js";
 import financeRoutes from "./routes/finance.js";
 import financePhase6Routes from "./routes/financePhase6.js";
 import stripeWebhookRoutes from "./routes/stripeWebhook.js";
+import adminBusinessesRoutes from "./routes/adminBusinesses.js";
+import adminReportsRoutes from "./routes/adminReports.js";
 import supporterRoutes from "./routes/supporters.js";
 import meSupporterRoutes from "./routes/meSupporter.js";
+import aiRoutes from "./routes/ai.js";
+import videoSummariesRoutes from "./routes/videoSummaries.js";
+import beneficiariesRoutes from "./routes/beneficiaries.js";
+import publicChildrenFundRoutes from "./routes/publicChildrenFund.js";
+import socialRoutes from "./routes/social.js";
+import organizationRoutes from "./routes/organization.js";
+import publicBrandingRoutes from "./routes/publicBranding.js";
+import { resolveTenant } from "@/middleware/tenant.js";
 
 export function buildApp() {
   const app = express();
@@ -98,6 +109,11 @@ export function buildApp() {
 
   app.use(attachAuth);
 
+  // Phase 13 — tenant resolution. Runs after auth so authenticated calls
+  // can still trust `req.auth.actor.organization_id` for their write
+  // paths while public reads use the host-matched `req.org`.
+  app.use(resolveTenant);
+
   app.use("/v1/auth", authRoutes);
   app.use("/v1/me", meRoutes);
   app.use("/v1/admin/users", adminUsersRoutes);
@@ -106,13 +122,23 @@ export function buildApp() {
   app.use("/v1/volunteers", volunteersRoutes);
   app.use("/v1/media", mediaRoutes);
   app.use("/v1/videos", videosRoutes);
+  app.use("/v1/photos", photosRoutes);
   app.use("/v1/projects", projectsRoutes);
   app.use("/v1/accomplishments", accomplishmentsRoutes);
   app.use("/v1/metrics", metricsRoutes);
   app.use("/v1/finance", financeRoutes);
   app.use("/v1/finance", financePhase6Routes);
+  app.use("/v1/admin/businesses", adminBusinessesRoutes);
+  app.use("/v1/admin/reports", adminReportsRoutes);
   app.use("/v1/supporters", supporterRoutes);
   app.use("/v1/me", meSupporterRoutes);
+  app.use("/v1/ai", aiRoutes);
+  app.use("/v1/beneficiaries", beneficiariesRoutes);
+  app.use("/v1/social", socialRoutes);
+  app.use("/v1/admin/organization", organizationRoutes);
+  app.use("/v1/public/branding", publicBrandingRoutes);
+  app.use("/v1/public/videos", videoSummariesRoutes);
+  app.use("/v1/public/children-fund", publicChildrenFundRoutes);
   app.use("/v1/public", publicPortalRoutes);
 
   // 404

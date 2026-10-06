@@ -27,11 +27,10 @@ async function primaryOrgId(): Promise<mongoose.Types.ObjectId> {
 
 // ============================================================================
 // Signup — ENUMERATION-SAFE. We return success regardless of whether the
-// email already exists. If it is new, we create a pending user + verification
-// token and queue a verification email. If it already exists AND is pending
-// (unverified), we queue a fresh verification email. If it already exists
-// and is verified, we queue a "you already have an account; sign in" email.
-// Nothing in the response tells the caller which path we took.
+// email already exists. Email verification is skipped: a fresh signup is
+// activated immediately (role + profile granted, matching donations linked)
+// so the supporter can sign in right away. If the email is already in use
+// we silently return ok without changing anything.
 // ============================================================================
 
 export async function signup(input: {
@@ -53,76 +52,119 @@ export async function signup(input: {
   const existing = await User.findOne({ organization_id: orgId, email: emailLc });
 
   if (existing) {
-    if (existing.email_verified_at) {
-      // Already verified — tell them to sign in. Shape identical to success.
-      await enqueue({
-        organization_id: orgId,
-        topic: "email.send_template",
-        payload: {
-          template: "supporter_already_registered",
-          to: emailLc,
-          user_id: existing._id.toString(),
-          idempotency_key: `signup-exists-${existing._id.toString()}-${Date.now().toString(36)}`,
-          data: {
-            display_name: existing.display_name,
-            sign_in_url: `${env.PUBLIC_SITE_URL.replace(/\/$/, "")}/sign-in`,
-          },
-        },
-      });
-      return { ok: true };
+    // If a prior signup left a pending account (from before verification was
+    // removed), activate it now so the user isn't stuck.
+    if (!existing.email_verified_at) {
+      const session = await mongoose.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await activateSupporter(existing, orgId, session);
+        });
+      } finally {
+        await session.endSession();
+      }
     }
-    // Pending — refresh the verification token.
-    const { raw, hash } = mintVerificationToken();
-    existing.verification_token_hash = hash;
-    existing.verification_expires_at = new Date(Date.now() + VERIFICATION_TTL_HOURS * 3_600_000);
-    await existing.save();
-    await enqueue({
-      organization_id: orgId,
-      topic: "email.send_template",
-      payload: {
-        template: "supporter_verify",
-        to: emailLc,
-        user_id: existing._id.toString(),
-        idempotency_key: `verify-${existing._id.toString()}-${hash.slice(0, 12)}`,
-        data: {
-          display_name: existing.display_name,
-          verify_url: `${env.PUBLIC_SITE_URL.replace(/\/$/, "")}/supporters/verify?token=${raw}`,
-          expires_hours: VERIFICATION_TTL_HOURS,
-        },
-      },
-    });
     return { ok: true };
   }
 
-  // Fresh signup.
+  // Fresh signup — create active and immediately provision the supporter
+  // role, profile, and donation links.
   const password_hash = await hashPassword(input.password);
-  const { raw, hash } = mintVerificationToken();
-  const user = await User.create({
-    organization_id: orgId,
-    email: emailLc,
-    display_name: input.display_name.trim(),
-    password_hash,
-    status: "pending",
-    verification_token_hash: hash,
-    verification_expires_at: new Date(Date.now() + VERIFICATION_TTL_HOURS * 3_600_000),
-  });
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const [user] = await User.create(
+        [
+          {
+            organization_id: orgId,
+            email: emailLc,
+            display_name: input.display_name.trim(),
+            password_hash,
+            status: "active",
+            email_verified_at: new Date(),
+            verification_token_hash: null,
+            verification_expires_at: null,
+          },
+        ],
+        { session }
+      );
+      await activateSupporter(user, orgId, session);
+    });
+  } finally {
+    await session.endSession();
+  }
+  return { ok: true };
+}
 
-  await enqueue({
-    organization_id: orgId,
-    topic: "email.send_template",
-    payload: {
-      template: "supporter_verify",
-      to: emailLc,
-      user_id: user._id.toString(),
-      idempotency_key: `verify-${user._id.toString()}-${hash.slice(0, 12)}`,
-      data: {
-        display_name: user.display_name,
-        verify_url: `${env.PUBLIC_SITE_URL.replace(/\/$/, "")}/supporters/verify?token=${raw}`,
-        expires_hours: VERIFICATION_TTL_HOURS,
+// Grants supporter role, creates the supporter profile, and links any
+// pre-existing donations by email. Shared by signup and verifyEmail so
+// both paths produce the same supporter state.
+async function activateSupporter(
+  user: { _id: mongoose.Types.ObjectId; email: string; display_name: string; email_verified_at?: Date | null; status?: string; verification_token_hash?: string | null; verification_expires_at?: Date | null; save: (opts?: { session?: mongoose.ClientSession }) => Promise<unknown> },
+  orgId: mongoose.Types.ObjectId,
+  session: mongoose.ClientSession
+): Promise<{ linked_donations: number }> {
+  if (!user.email_verified_at) {
+    user.email_verified_at = new Date();
+    user.status = "active";
+    user.verification_token_hash = null;
+    user.verification_expires_at = null;
+    await user.save({ session });
+  }
+
+  await RoleAssignment.updateOne(
+    {
+      organization_id: orgId,
+      user_id: user._id,
+      role: "supporter",
+      scope_type: "organization",
+      scope_id: null,
+    },
+    {
+      $setOnInsert: {
+        organization_id: orgId,
+        user_id: user._id,
+        role: "supporter",
+        scope_type: "organization",
+        scope_id: null,
+        granted_by: user._id,
+        granted_at: new Date(),
+        revoked_at: null,
       },
     },
-  });
-  return { ok: true };
+    { upsert: true, session }
+  );
+
+  const unsubRaw = randomBytes(32).toString("base64url");
+  await SupporterProfile.updateOne(
+    { organization_id: orgId, user_id: user._id },
+    {
+      $setOnInsert: {
+        organization_id: orgId,
+        user_id: user._id,
+        display_name: user.display_name,
+        anonymous_on_wall: false,
+        country: null,
+        prefs: defaultPrefs(),
+        unsubscribe_token_hash: sha256(unsubRaw),
+        deletion_requested_at: null,
+        deletion_due_at: null,
+        version: 0,
+      },
+    },
+    { upsert: true, session }
+  );
+
+  const linkResult = await Donation.updateMany(
+    {
+      organization_id: orgId,
+      donor_email: user.email,
+      $or: [{ supporter_user_id: null }, { supporter_user_id: { $exists: false } }],
+    },
+    { $set: { supporter_user_id: user._id } },
+    { session }
+  );
+  return { linked_donations: linkResult.modifiedCount ?? 0 };
 }
 
 export async function resendVerification(email: string): Promise<{ ok: true }> {

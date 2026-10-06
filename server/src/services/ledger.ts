@@ -133,6 +133,7 @@ export async function postToLedger(
       base_currency: tx.base_currency,
       project_id: line.project_id ? line.project_id.toString() : null,
       expense_category_id: line.expense_category_id ? line.expense_category_id.toString() : null,
+      business_id: line.business_id ? line.business_id.toString() : null,
       posted_at: postedAt.getTime(),
     };
     const hash = computeHash(prev_hash, rowForHash, seed);
@@ -151,6 +152,7 @@ export async function postToLedger(
           memo: line.memo ?? tx.memo ?? null,
           project_id: line.project_id,
           expense_category_id: line.expense_category_id,
+          business_id: line.business_id ?? null,
           posted_at: postedAt,
           prev_hash,
           hash,

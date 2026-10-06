@@ -31,10 +31,10 @@ export default function FollowsPage() {
   async function unfollow(projectId: string) {
     try {
       await api(`/me/follows/${projectId}`, { method: "DELETE" });
-      toast.show("Unfollowed", "ok");
+      toast.push({ tone: "success", message: "Unfollowed" });
       void load();
     } catch (e) {
-      toast.show((e as ApiClientError).message, "error");
+      toast.push({ tone: "danger", message: (e as ApiClientError).message });
     }
   }
 

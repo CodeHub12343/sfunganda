@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asyncHandler, auth, parseBody } from "./_shared.js";
 import {
+  communityCreateBody,
   milestoneBody,
   milestoneUpdateBody,
   projectCreateBody,
@@ -35,6 +36,35 @@ router.get(
       .sort({ name: 1 })
       .lean();
     res.json({ data: items });
+  })
+);
+
+router.post(
+  "/communities",
+  asyncHandler(async (req, res) => {
+    const a = auth(req);
+    if (!can(a.actor, "projects.create")) throw new AppError("forbidden", "cannot create community");
+    const body = parseBody(communityCreateBody, req.body);
+    const orgId = new mongoose.Types.ObjectId(a.actor.organization_id);
+    const exists = await Community.findOne({ organization_id: orgId, slug: body.slug }).lean();
+    if (exists) throw new AppError("conflict", "a community with that slug already exists", {
+      fields: { slug: "already in use" },
+    });
+    const doc = await Community.create({
+      organization_id: orgId,
+      name: body.name,
+      slug: body.slug,
+      region_label: body.region_label,
+      summary: body.summary ?? "",
+    });
+    res.json({
+      data: {
+        _id: doc._id.toString(),
+        name: doc.name,
+        slug: doc.slug,
+        region_label: doc.region_label,
+      },
+    });
   })
 );
 

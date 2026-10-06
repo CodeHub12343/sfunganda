@@ -2,6 +2,7 @@
 
 import styled from "styled-components";
 import { VideoPlayer } from "@/components/ui/VideoPlayer";
+import { VideoSummaryPicker } from "@/components/ai/VideoSummaryPicker";
 
 type VideoRow = {
   id: string;
@@ -49,6 +50,7 @@ export function VideosFeed({ videos }: { videos: VideoRow[] }) {
             {v.hls_url ? <VideoPlayer hlsUrl={v.hls_url} caption={v.title} /> : null}
             <h2>{v.title}</h2>
             <time dateTime={v.created_at}>{new Date(v.created_at).toLocaleDateString()}</time>
+            <VideoSummaryPicker videoId={v.id} />
           </Card>
         ))
       )}

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import rateLimit from "express-rate-limit";
 import mongoose from "mongoose";
 import { asyncHandler, auth, parseBody } from "./_shared.js";
@@ -23,6 +23,12 @@ import { recordConsent, revokeConsent } from "@/services/consent.js";
 import { MediaAsset } from "@/models/index.js";
 import { AppError } from "@/util/errors.js";
 import { can } from "@/policy/index.js";
+import {
+  isLocalMode,
+  verifyLocalUrl,
+  __localGetObject,
+  __localPutObject,
+} from "@/services/storage.js";
 
 const router = Router();
 
@@ -185,6 +191,78 @@ router.post(
     const reason = typeof req.body?.reason === "string" ? req.body.reason : "revoked";
     await revokeConsent(a.actor, req.params.id, reason);
     res.json({ data: { ok: true } });
+  })
+);
+
+// =============================================================================
+// Dev-only local filesystem fallback. Mounted only when there are no R2
+// credentials AND NODE_ENV !== "production". Each request is authenticated
+// by the HMAC in the query string (sig + exp) that `presignUrl` embedded; no
+// session cookie is required. The 404 branch when local mode is off keeps the
+// surface area invisible in production.
+// =============================================================================
+
+const LOCAL_PUT_LIMIT = "128mb"; // Generous dev-only limit; real limits are per-kind in services/media.ts.
+
+router.put(
+  "/local/:bucket/*",
+  express.raw({ type: () => true, limit: LOCAL_PUT_LIMIT }),
+  asyncHandler(async (req, res) => {
+    if (!isLocalMode()) throw new AppError("not_found", "not found");
+    const bucket = String(req.params.bucket);
+    const key = String((req.params as unknown as { 0: string })[0] ?? "");
+    const sig = typeof req.query.sig === "string" ? req.query.sig : "";
+    const exp = Number(req.query.exp);
+    const method = typeof req.query.m === "string" ? req.query.m : "PUT";
+    if (method !== "PUT" || !verifyLocalUrl(bucket, key, exp, sig)) {
+      throw new AppError("unauthorized", "invalid upload signature");
+    }
+    const body = Buffer.isBuffer(req.body) ? req.body : Buffer.from([]);
+    if (body.length === 0) throw new AppError("bad_request", "empty body");
+    await __localPutObject(bucket, key, body);
+    // Mimic S3's ETag so the client's XHR etag-collection path works.
+    res.setHeader("etag", `"local-${Date.now().toString(36)}"`);
+    res.status(200).end();
+  })
+);
+
+router.get(
+  "/local/:bucket/*",
+  asyncHandler(async (req, res) => {
+    if (!isLocalMode()) throw new AppError("not_found", "not found");
+    const bucket = String(req.params.bucket);
+    const key = String((req.params as unknown as { 0: string })[0] ?? "");
+    const sig = typeof req.query.sig === "string" ? req.query.sig : "";
+    const exp = Number(req.query.exp);
+    const method = typeof req.query.m === "string" ? req.query.m : "GET";
+    if (method !== "GET" || !verifyLocalUrl(bucket, key, exp, sig)) {
+      throw new AppError("unauthorized", "invalid download signature");
+    }
+    const buf = await __localGetObject(bucket, key);
+    if (!buf) throw new AppError("not_found", "not found");
+    // Infer content-type from the extension so <img> / <video> tags render
+    // correctly without the browser having to sniff. Default to octet-stream
+    // for anything we don't explicitly know.
+    const ext = key.toLowerCase().split(".").pop() ?? "";
+    const ctype =
+      ext === "jpg" || ext === "jpeg"
+        ? "image/jpeg"
+        : ext === "png"
+          ? "image/png"
+          : ext === "webp"
+            ? "image/webp"
+            : ext === "gif"
+              ? "image/gif"
+              : ext === "mp4"
+                ? "video/mp4"
+                : ext === "webm"
+                  ? "video/webm"
+                  : ext === "pdf"
+                    ? "application/pdf"
+                    : "application/octet-stream";
+    res.setHeader("content-type", ctype);
+    res.setHeader("cache-control", "private, max-age=60");
+    res.status(200).send(buf);
   })
 );
 

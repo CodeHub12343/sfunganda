@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { ChildrensFundSummary } from "@/components/children-fund/PublicSummary";
 
 export const metadata: Metadata = {
   title: "Transparency — Sarah's Foundation",
@@ -101,6 +102,8 @@ export default async function TransparencyPage() {
         <Tile label="Remaining to spend" value={money(data.totals.remaining_cents, data.base_currency)} />
         <Tile label="Donations count" value={Intl.NumberFormat().format(data.totals.donations_count)} />
       </section>
+
+      <ChildrensFundSummary />
 
       <section aria-label="By fund type">
         <h2>By fund type</h2>

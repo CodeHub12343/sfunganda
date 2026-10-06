@@ -1,11 +1,27 @@
 export { Organization } from "./Organization.js";
+export type { OrganizationDoc, OrgBranding, OrgInterOrg } from "./Organization.js";
+export { InterOrgTransfer } from "./InterOrgTransfer.js";
+export type { InterOrgTransferDoc, InterOrgTransferState } from "./InterOrgTransfer.js";
 export { User } from "./User.js";
 export { RoleAssignment, ROLES, SCOPE_TYPES } from "./RoleAssignment.js";
 export type { Role, ScopeType } from "./RoleAssignment.js";
 export { Session } from "./Session.js";
 export { AuditLog } from "./AuditLog.js";
 export { OutboxEvent } from "./OutboxEvent.js";
-export { Community } from "./Community.js";
+export { Community, roundCoarse } from "./Community.js";
+export { Business } from "./Business.js";
+export type { BusinessDoc, BusinessKind, BusinessStatus } from "./Business.js";
+export { BusinessProduction } from "./BusinessProduction.js";
+export type { BusinessProductionDoc, ProductionState, ProductionUnit } from "./BusinessProduction.js";
+export { ImpactReport } from "./ImpactReport.js";
+export type {
+  ImpactReportDoc,
+  ImpactReportState,
+  ReportPeriodKind,
+  ReportSnapshot,
+} from "./ImpactReport.js";
+export { ReportExport } from "./ReportExport.js";
+export type { ReportExportDoc, ReportExportState } from "./ReportExport.js";
 export { IdSequence } from "./IdSequence.js";
 export { VolunteerSignup, VOLUNTEER_TASKS } from "./VolunteerSignup.js";
 export { MediaAsset } from "./MediaAsset.js";
@@ -69,3 +85,26 @@ export { Notification } from "./Notification.js";
 export type { NotificationDoc, NotificationTopic } from "./Notification.js";
 export { EmailDelivery } from "./EmailDelivery.js";
 export type { EmailDeliveryDoc, EmailDeliveryStatus } from "./EmailDelivery.js";
+export { AiGeneration } from "./AiGeneration.js";
+export type {
+  AiGenerationDoc,
+  AiPurpose,
+  AiEntityType,
+  AiValidationFinding,
+  AiValidationResult,
+  AiTokens,
+} from "./AiGeneration.js";
+export { VideoCaption } from "./VideoCaption.js";
+export type { VideoCaptionDoc, VideoCaptionCue } from "./VideoCaption.js";
+export { VideoTranslation } from "./VideoTranslation.js";
+export type { VideoTranslationDoc } from "./VideoTranslation.js";
+export { BeneficiaryFundSummary } from "./BeneficiaryFundSummary.js";
+export type { BeneficiaryFundSummaryDoc } from "./BeneficiaryFundSummary.js";
+export { SocialConnection } from "./SocialConnection.js";
+export type {
+  SocialConnectionDoc,
+  SocialPlatform,
+  EncryptedBlob,
+} from "./SocialConnection.js";
+export { SocialPost } from "./SocialPost.js";
+export type { SocialPostDoc, SocialPostState } from "./SocialPost.js";

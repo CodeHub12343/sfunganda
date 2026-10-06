@@ -57,8 +57,10 @@ export type PublicFundingSummary = {
   as_of: string;
 };
 
-export async function publicFinanceSummary(): Promise<PublicFundingSummary> {
-  const orgId = await primaryOrgId();
+export async function publicFinanceSummary(
+  organization_id?: mongoose.Types.ObjectId
+): Promise<PublicFundingSummary> {
+  const orgId = organization_id ?? (await primaryOrgId());
 
   const [donAgg] = await Donation.aggregate([
     {
@@ -213,7 +215,10 @@ export async function publicFinanceSummary(): Promise<PublicFundingSummary> {
   };
 }
 
-export async function publicProjectFunding(project_slug: string): Promise<{
+export async function publicProjectFunding(
+  project_slug: string,
+  organization_id?: mongoose.Types.ObjectId
+): Promise<{
   slug: string;
   base_currency: string;
   raised_cents: number;
@@ -221,7 +226,7 @@ export async function publicProjectFunding(project_slug: string): Promise<{
   remaining_cents: number;
   recent: Array<{ public_id: string; donor: string; amount_cents: number; at: string }>;
 } | null> {
-  const orgId = await primaryOrgId();
+  const orgId = organization_id ?? (await primaryOrgId());
   const p = await Project.findOne({ organization_id: orgId, slug: project_slug }).lean();
   if (!p) return null;
 

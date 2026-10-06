@@ -22,6 +22,10 @@ export type TransactionLine = {
   // Optional link back to a project or expense category for reports.
   project_id: mongoose.Types.ObjectId | null;
   expense_category_id: mongoose.Types.ObjectId | null;
+  // Phase 8: business dimension — carries into ledger_entries on post, so
+  // the sustainability aggregator can walk business_id directly. Optional
+  // so pre-Phase-8 call sites compile unchanged.
+  business_id?: mongoose.Types.ObjectId | null;
 };
 
 export type FinancialTransactionDoc = {
@@ -78,6 +82,7 @@ const LineSchema = new Schema<TransactionLine>(
     memo: { type: String, default: null, maxlength: 500 },
     project_id: { type: Schema.Types.ObjectId, ref: "Project", default: null },
     expense_category_id: { type: Schema.Types.ObjectId, ref: "ExpenseCategory", default: null },
+    business_id: { type: Schema.Types.ObjectId, ref: "Business", default: null },
   },
   { _id: false }
 );

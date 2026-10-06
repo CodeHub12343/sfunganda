@@ -1,51 +1,63 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { api } from "@/lib/api";
+import { CommunitiesView } from "./CommunitiesView";
 
 export const metadata: Metadata = {
-  title: "Communities — Sarah's Foundation",
+  title: "Communities",
+  description:
+    "The communities Sarah's Foundation works in — coarse map locations and the active programmes in each.",
 };
 
-type Row = { slug: string; name: string; region_label: string; summary: string; active_projects: number };
+export const revalidate = 600;
 
-export default async function CommunitiesIndex() {
-  let items: Row[] = [];
+type CommunityItem = {
+  slug: string;
+  name: string;
+  region_label: string;
+  summary: string;
+  active_projects: number;
+};
+
+type CommunityDetail = {
+  slug: string;
+  name: string;
+  region_label: string;
+  summary: string;
+  public_lat: number | null;
+  public_lng: number | null;
+  businesses: Array<{ slug: string; name: string; kind: string; status: string }>;
+};
+
+export default async function CommunitiesPage() {
+  let items: CommunityItem[] = [];
+  let details: CommunityDetail[] = [];
   try {
-    const data = await api<{ items: Row[] }>("/public/communities", {
+    const list = await api<{ items: CommunityItem[] }>("/public/communities", {
       tags: ["public:communities"],
       revalidate: 600,
     });
-    items = data.items;
+    items = list.items;
+    details = (await Promise.all(
+      items.map((c) =>
+        api<CommunityDetail>(`/public/communities/${c.slug}`, {
+          tags: ["public:communities", `public:community:${c.slug}`],
+          revalidate: 600,
+        }).catch(() => null)
+      )
+    )).filter((x): x is CommunityDetail => x !== null);
   } catch {
-    items = [];
+    /* leave empty */
   }
+
   return (
-    <main style={{ maxWidth: 960, margin: "0 auto", padding: "3rem 1.25rem 5rem" }}>
-      <h1 style={{ fontSize: "2.25rem", marginBottom: "2rem" }}>Communities</h1>
-      {items.length === 0 ? (
-        <p>No community profiles published yet.</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: "1rem" }}>
-          {items.map((c) => (
-            <li
-              key={c.slug}
-              style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 10,
-                padding: "1rem 1.25rem",
-                background: "#fff",
-              }}
-            >
-              <h2 style={{ margin: 0, fontSize: "1.2rem" }}>
-                <Link href={`/accomplishments?community=${c.slug}`}>{c.name}</Link>
-              </h2>
-              <small style={{ color: "#6b7280" }}>{c.region_label}</small>
-              <p style={{ margin: "0.5rem 0 0", color: "#374151" }}>{c.summary}</p>
-              <small style={{ color: "#6b7280" }}>{c.active_projects} active projects</small>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+    <>
+      <Navbar />
+      <main>
+        <CommunitiesView items={items} details={details} />
+      </main>
+      <Footer />
+    </>
   );
 }

@@ -18,7 +18,7 @@ export default function AccountPage() {
     try {
       const res = await fetch("/api/v1/me/export", { credentials: "same-origin" });
       if (!res.ok) {
-        toast.show("Export failed", "error");
+        toast.push({ tone: "danger", message: "Export failed" });
         return;
       }
       const blob = await res.blob();
@@ -29,7 +29,7 @@ export default function AccountPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      toast.show((e as Error).message, "error");
+      toast.push({ tone: "danger", message: (e as Error).message });
     }
   }
 
@@ -39,9 +39,9 @@ export default function AccountPage() {
         json: { confirm_email: confirmEmail },
       });
       setDue(r.due_at);
-      toast.show("Deletion scheduled", "ok");
+      toast.push({ tone: "success", message: "Deletion scheduled" });
     } catch (e) {
-      toast.show((e as ApiClientError).message, "error");
+      toast.push({ tone: "danger", message: (e as ApiClientError).message });
     }
   }
 
@@ -49,9 +49,9 @@ export default function AccountPage() {
     try {
       await api("/me/delete/cancel", { json: {} });
       setDue(null);
-      toast.show("Deletion cancelled", "ok");
+      toast.push({ tone: "success", message: "Deletion cancelled" });
     } catch (e) {
-      toast.show((e as ApiClientError).message, "error");
+      toast.push({ tone: "danger", message: (e as ApiClientError).message });
     }
   }
 

@@ -45,6 +45,42 @@ export const nav = [
   { label: "Stories", href: "/#stories" },
 ] as const;
 
+// Grouped public routes surfaced through the Navbar "Explore" mega-menu and
+// the mobile sheet. Every entry is a real published page so visitors can
+// discover work that lives beyond the single-page landing anchors.
+export type ExploreItem = { label: string; href: string; blurb: string };
+export type ExploreGroup = { title: string; items: ExploreItem[] };
+
+export const exploreMenu: ExploreGroup[] = [
+  {
+    title: "Our Work",
+    items: [
+      { label: "Projects", href: "/projects", blurb: "Active builds and funding goals." },
+      { label: "Communities", href: "/communities", blurb: "Where the children live and grow." },
+      { label: "Impact", href: "/impact", blurb: "Outcomes measured against our plan." },
+      { label: "Accomplishments", href: "/accomplishments", blurb: "Milestones already delivered." },
+      { label: "Businesses", href: "/businesses", blurb: "Partner enterprises funding the home." },
+      { label: "Sustainability", href: "/sustainability", blurb: "Farming and self-sustaining care." },
+    ],
+  },
+  {
+    title: "Media",
+    items: [
+      { label: "Gallery", href: "/gallery", blurb: "Photos from the field." },
+      { label: "Videos", href: "/videos", blurb: "Updates from Leon and the team." },
+    ],
+  },
+  {
+    title: "Trust",
+    items: [
+      { label: "Transparency Center", href: "/transparency", blurb: "Every gift, accounted for." },
+      { label: "Reports", href: "/reports", blurb: "Quarterly reporting and audits." },
+      { label: "Safeguarding", href: "/safeguarding", blurb: "How we protect every child." },
+      { label: "Join as a supporter", href: "/supporters/signup", blurb: "Follow projects and save receipts." },
+    ],
+  },
+];
+
 export const hero = {
   eyebrow: "Providing Hope · Creating Home · Creating Lives",
   headline: ["Every child deserves", "hope, safety, and a", "place to call home."],
@@ -62,6 +98,7 @@ export const hero = {
 export type Stat = {
   value: number;
   suffix?: string;
+  prefix?: string;
   label: string;
   detail: string;
 };
@@ -509,12 +546,23 @@ export const footer: {
     "Sarah's Foundation Uganda provides hope, home, and opportunity to vulnerable children — in partnership with Honest Need.",
   columns: [
     {
-      title: "Foundation",
+      title: "Our Work",
       links: [
+        { label: "Projects", href: "/projects" },
+        { label: "Communities", href: "/communities" },
+        { label: "Impact", href: "/impact" },
+        { label: "Accomplishments", href: "/accomplishments" },
+        { label: "Businesses", href: "/businesses" },
+        { label: "Sustainability", href: "/sustainability" },
+      ],
+    },
+    {
+      title: "Media & Stories",
+      links: [
+        { label: "Gallery", href: "/gallery" },
+        { label: "Videos", href: "/videos" },
         { label: "Our Story", href: "/#story" },
-        { label: "What We Need", href: "/#impact" },
         { label: "Stories", href: "/#stories" },
-        { label: "Transparency", href: "/#transparency" },
       ],
     },
     {
@@ -522,15 +570,18 @@ export const footer: {
       links: [
         { label: "Donate", href: "/#sponsor" },
         { label: "Volunteer", href: "/#volunteer" },
-        { label: "Share our story", href: "/#stories" },
+        { label: "Join as a supporter", href: "/supporters/signup" },
+        { label: "Sign in", href: "/sign-in" },
       ],
     },
     {
-      title: "Trust",
+      title: "Trust & Legal",
       links: [
+        { label: "Transparency Center", href: "/transparency" },
+        { label: "Reports", href: "/reports" },
+        { label: "Safeguarding", href: "/safeguarding" },
         { label: "Privacy policy", href: "/privacy" },
         { label: "Terms of use", href: "/terms" },
-        { label: "Safeguarding", href: "/safeguarding" },
         { label: "Contact", href: "mailto:hello@honestneed.com" },
       ],
     },

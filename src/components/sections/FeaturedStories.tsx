@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Container, Section } from "@/components/ui/Container";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Reveal, RevealGroup, revealItem } from "@/components/ui/Reveal";
-import { featuredStories, type ProgrammeStory } from "@/data/content";
+import { featuredStories as fallbackStories, type ProgrammeStory } from "@/data/content";
 import { media } from "@/styles/theme";
 
 // D10: no stock photographs of identifiable children paired with invented
@@ -99,7 +99,8 @@ const Body = styled.p`
   border-top: 1px solid rgba(255, 255, 255, 0.25);
 `;
 
-export function FeaturedStories() {
+export function FeaturedStories({ stories = fallbackStories }: { stories?: ProgrammeStory[] } = {}) {
+  const featuredStories = stories;
   return (
     <Section id="stories">
       <Container $wide>

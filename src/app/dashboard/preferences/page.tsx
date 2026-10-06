@@ -47,9 +47,9 @@ export default function PreferencesPage() {
         method: "PATCH",
         json: { anonymous_on_wall: anonymous, prefs },
       });
-      toast.show("Preferences saved", "ok");
+      toast.push({ tone: "success", message: "Preferences saved" });
     } catch (e) {
-      toast.show((e as ApiClientError).message, "error");
+      toast.push({ tone: "danger", message: (e as ApiClientError).message });
     } finally {
       setSaving(false);
     }

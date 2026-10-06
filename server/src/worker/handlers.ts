@@ -311,6 +311,199 @@ const handlers: Record<string, HandlerFn> = {
       }
     }
   },
+
+  // Phase 9 — PDF rendering for an impact report export.
+  //
+  // Idempotent via the export row's `state`: a replay on a `ready`/`failed`
+  // row short-circuits. We write to the "documents" bucket under a key
+  // namespaced by period + content hash, so a redelivery doesn't overwrite
+  // the file a visitor is downloading.
+  // Phase 12 — fan out an approved accomplishment's videos to every
+  // active connection. One child `social.post` event per (video,
+  // connection). The fan-out itself is cheap and idempotent; the
+  // publishing work is in the per-row handler below.
+  async "social.fanout_accomplishment_published"(payload, ctx) {
+    const { fanOutAccomplishment } = await import("@/services/social/fanout.js");
+    const accId = String(payload.accomplishment_id ?? "");
+    if (!mongoose.isValidObjectId(accId)) return;
+    const r = await fanOutAccomplishment({
+      organization_id: ctx.organization_id,
+      accomplishment_id: new mongoose.Types.ObjectId(accId),
+    });
+    log.info(r, "social.fanout.done");
+  },
+
+  // Phase 12 — publish one social post. Idempotent via its state
+  // machine (claim with findOneAndUpdate on state=queued). Terminal
+  // failures stay as `failed`; retryable failures return to `queued`
+  // so the outbox retries with its own backoff.
+  async "social.post"(payload) {
+    const { processSocialPost } = await import("@/services/social/fanout.js");
+    const id = String(payload.post_id ?? "");
+    if (!mongoose.isValidObjectId(id)) return;
+    const r = await processSocialPost(id);
+    if (r.retry) {
+      // The outbox retries on throw; keep terminal-vs-retry distinct
+      // by throwing only when the handler wants another attempt.
+      throw new Error(r.error_message ?? "social.post retry");
+    }
+  },
+
+  // Phase 10 — pull captions from the video provider once the asset is
+  // `ready`. The handler is idempotent on the (asset_id, language) unique
+  // index. If the provider has no captions (upload too new, no
+  // speech-to-text), we leave the row in `pending` and let the next trigger
+  // retry.
+  async "ai.video_transcribe"(payload, ctx) {
+    const { MediaAsset } = await import("@/models/index.js");
+    const { upsertTranscript } = await import("@/services/ai/videoSummary.js");
+    const id = String(payload.asset_id ?? "");
+    if (!mongoose.isValidObjectId(id)) return;
+    const asset = await MediaAsset.findOne({ _id: id, organization_id: ctx.organization_id });
+    if (!asset || asset.kind !== "video" || asset.status !== "ready") return;
+    const providerId = asset.provider?.asset_id ?? null;
+    if (!providerId) return;
+
+    const streamAccount = process.env.STREAM_ACCOUNT_ID;
+    const streamToken = process.env.STREAM_API_TOKEN;
+    if (!streamAccount || !streamToken) {
+      // No provider — in dev we skip. The transcript can also be pasted
+      // in via the admin screen.
+      return;
+    }
+    const url = `https://api.cloudflare.com/client/v4/accounts/${streamAccount}/stream/${providerId}/captions/en/vtt`;
+    const res = await fetch(url, { headers: { authorization: `Bearer ${streamToken}` } });
+    if (res.status === 404) return; // captions not generated yet; retry later
+    if (!res.ok) throw new Error(`stream captions failed: ${res.status}`);
+    const vtt = await res.text();
+    const { text, cues } = parseVtt(vtt);
+    await upsertTranscript({
+      organization_id: ctx.organization_id.toString(),
+      media_asset_id: id,
+      language: "en",
+      text,
+      cues,
+      provider: "stream",
+      provider_asset_id: providerId,
+    });
+  },
+
+  async "report.generate_pdf"(payload) {
+    const { ImpactReport, ReportExport } = await import("@/models/index.js");
+    const { renderReportPdf } = await import("@/services/reportPdf.js");
+    const { markExportReady, markExportFailed } = await import("@/services/reports.js");
+    const { bucketName, putObject } = await import("@/services/storage.js");
+
+    const idStr = String(payload.export_id ?? "");
+    if (!mongoose.isValidObjectId(idStr)) {
+      log.warn({ payload }, "report.generate_pdf.bad_id");
+      return;
+    }
+    const exportId = new mongoose.Types.ObjectId(idStr);
+
+    const exp = await ReportExport.findById(exportId);
+    if (!exp) return;
+    if (exp.state === "ready" || exp.state === "failed") return;
+    exp.state = "rendering";
+    exp.started_at = new Date();
+    await exp.save();
+
+    const report = await ImpactReport.findById(exp.report_id);
+    if (!report || !report.snapshot) {
+      await markExportFailed(exportId, "report missing or has no snapshot");
+      return;
+    }
+    if (report.snapshot.content_hash !== exp.snapshot_content_hash) {
+      // The report was recompiled after this export was queued. Abandon
+      // this one — a new export has to be requested with the new hash.
+      await markExportFailed(
+        exportId,
+        `snapshot hash drifted (export=${exp.snapshot_content_hash.slice(0, 8)}, now=${report.snapshot.content_hash.slice(0, 8)})`
+      );
+      return;
+    }
+
+    try {
+      const { buffer, pages, sha256 } = await renderReportPdf(report);
+      const bucket = bucketName("documents");
+      const key = `reports/${report.period_code}/${report.snapshot.content_hash.slice(0, 16)}-${sha256.slice(0, 8)}.pdf`;
+      await putObject(bucket, key, buffer, "application/pdf");
+      await markExportReady(exportId, { bucket, key, bytes: buffer.length, pages, sha256 });
+      log.info({ export_id: idStr, pages, bytes: buffer.length }, "report.generate_pdf.ready");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "unknown";
+      await markExportFailed(exportId, msg);
+      log.error({ export_id: idStr, err: msg }, "report.generate_pdf.failed");
+      throw err; // Let the worker surface it and retry per its backoff policy.
+    }
+  },
+
+  // Phase 9 — scheduled monthly draft. Called by the cron (`report.schedule`)
+  // handler below with `{ period_code: "YYYY-MM" }`. It creates a draft
+  // report for the previous month if one does not already exist, compiles
+  // it with the current ledger state, and leaves it in `compiled` state
+  // for a human reviewer to pick up. Idempotent: a repeat invocation
+  // short-circuits on the unique (org, period_code) index.
+  async "report.schedule_monthly"(payload, ctx) {
+    const { ImpactReport, Organization } = await import("@/models/index.js");
+    const { compileSnapshot } = await import("@/services/reportCompiler.js");
+
+    const period = String(payload.period_code ?? "");
+    if (!/^\d{4}-\d{2}$/.test(period)) {
+      log.warn({ period }, "report.schedule_monthly.bad_period");
+      return;
+    }
+
+    const orgId = ctx.organization_id;
+    const org = await Organization.findById(orgId).lean();
+    if (!org) return;
+
+    let report = await ImpactReport.findOne({
+      organization_id: orgId,
+      period_kind: "month",
+      period_code: period,
+    });
+    if (!report) {
+      try {
+        report = await ImpactReport.create({
+          organization_id: orgId,
+          period_kind: "month",
+          period_code: period,
+          title: `${org.name} — ${period}`,
+          state: "draft",
+          // Scheduled drafts have no human author yet; stamp the
+          // organisation's root user if available, else a sentinel. The
+          // reviewer who edits it is captured on first edit.
+          created_by: orgId, // reuse org id as a stable "system" value
+        });
+      } catch (err) {
+        // Race / duplicate: another tick created it. Pick up the live row.
+        if ((err as { code?: number }).code === 11000) {
+          report = await ImpactReport.findOne({
+            organization_id: orgId,
+            period_kind: "month",
+            period_code: period,
+          });
+          if (!report) return;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (report.state !== "draft") return; // already underway — leave alone
+
+    const snapshot = await compileSnapshot({
+      organization_id: orgId,
+      period_code: period,
+      compiled_by: "system:scheduler",
+    });
+    report.snapshot = snapshot;
+    report.state = "compiled";
+    report.version += 1;
+    await report.save();
+    log.info({ period, report_id: report._id.toString() }, "report.schedule_monthly.compiled");
+  },
 };
 
 function subjectFor(template: string, data: Record<string, unknown>): string {
@@ -326,6 +519,46 @@ function subjectFor(template: string, data: Record<string, unknown>): string {
     default:
       return "Sarah's Foundation";
   }
+}
+
+// Minimal WebVTT parser — Cloudflare Stream serves WEBVTT with "HH:MM:SS.mmm"
+// timecodes. We don't need styling or regions, so a line-oriented pass is
+// sufficient and avoids a dependency.
+function parseVtt(vtt: string): { text: string; cues: Array<{ start_ms: number; end_ms: number; text: string }> } {
+  const lines = vtt.split(/\r?\n/);
+  const cues: Array<{ start_ms: number; end_ms: number; text: string }> = [];
+  const text: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i]!;
+    const m = /^(\d{2}:)?(\d{2}):(\d{2})\.(\d{3})\s+-->\s+(\d{2}:)?(\d{2}):(\d{2})\.(\d{3})/.exec(line);
+    if (m) {
+      const start_ms =
+        Number(m[1]?.slice(0, 2) ?? 0) * 3_600_000 +
+        Number(m[2]) * 60_000 +
+        Number(m[3]) * 1_000 +
+        Number(m[4]);
+      const end_ms =
+        Number(m[5]?.slice(0, 2) ?? 0) * 3_600_000 +
+        Number(m[6]) * 60_000 +
+        Number(m[7]) * 1_000 +
+        Number(m[8]);
+      const buf: string[] = [];
+      i++;
+      while (i < lines.length && lines[i]!.trim().length > 0) {
+        buf.push(lines[i]!);
+        i++;
+      }
+      const cueText = buf.join(" ").trim();
+      if (cueText) {
+        cues.push({ start_ms, end_ms, text: cueText.slice(0, 500) });
+        text.push(cueText);
+      }
+    } else {
+      i++;
+    }
+  }
+  return { text: text.join(" "), cues };
 }
 
 function escapeHtml(s: string): string {

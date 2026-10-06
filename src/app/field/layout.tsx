@@ -1,11 +1,11 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { api, ApiClientError } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Field — Sarah's Foundation",
+  title: "Field â€” Sarah's Foundation",
   manifest: "/field/manifest.webmanifest",
 };
 
@@ -23,7 +23,7 @@ export default async function FieldLayout({ children }: { children: React.ReactN
     .join("; ");
   let me: Me;
   try {
-    me = await api<Me>("/me/", { method: "GET", headers: { cookie: cookieHeader } });
+    me = await api<Me>("/me", { method: "GET", headers: { cookie: cookieHeader } });
   } catch (err) {
     if (err instanceof ApiClientError) {
       if (err.code === "mfa_required") redirect("/mfa?next=/field");
