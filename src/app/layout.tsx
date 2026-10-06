@@ -70,8 +70,17 @@ export default async function RootLayout({
   const h = await headers();
   const nonce = h.get("x-csp-nonce") ?? undefined;
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
-      <body>
+    <html
+      lang="en"
+      className={`${playfair.variable} ${inter.variable}`}
+      // Browser extensions (Dark Reader, Grammarly, password managers)
+      // routinely inject attributes on <html> and <body> before React
+      // hydrates, which trips React #418. Suppressing the warning on
+      // these two outer-most elements leaves hydration intact for every
+      // real app node.
+      suppressHydrationWarning
+    >
+      <body suppressHydrationWarning>
         {/* Skip link — hidden until keyboard focus (WCAG 2.1 bypass blocks).
             The inline style carries the request's CSP nonce; without it a
             strict Content-Security-Policy blocks the rule and the link

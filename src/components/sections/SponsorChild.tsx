@@ -269,10 +269,17 @@ export function SponsorChild() {
       });
       const payload = (await res.json()) as {
         data?: { url?: string };
-        error?: { message?: string };
+        error?: { code?: string; message?: string };
       };
       const url = payload.data?.url;
       if (!res.ok || !url) {
+        // 503 "unavailable" means the Stripe key isn't configured on the
+        // server — tell the donor so, instead of a generic failure.
+        if (res.status === 503 || payload.error?.code === "unavailable") {
+          throw new Error(
+            "Our donation processor isn't available right now. Please try again shortly, or email us at hello@sfuganda.com and we'll process your gift directly."
+          );
+        }
         throw new Error(payload.error?.message || "Could not start checkout.");
       }
       const data = { url };
