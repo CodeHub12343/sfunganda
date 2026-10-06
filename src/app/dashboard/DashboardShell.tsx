@@ -24,15 +24,18 @@ const NAV = [
 const Wrap = styled.div`
   max-width: 1180px;
   margin: 0 auto;
-  padding: 1rem 1rem 2.5rem;
+  padding: 0;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  width: 100%;
+  overflow-x: clip;
 
   ${amMedia.md} {
     padding: 2rem 1.5rem 4rem;
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: 240px minmax(0, 1fr);
     gap: 2.25rem;
+    overflow-x: visible;
   }
 `;
 
@@ -42,11 +45,12 @@ const MobileNav = styled.nav`
   position: sticky;
   top: 0;
   z-index: 10;
-  margin: -1rem -1rem 0;
-  padding: 0.65rem 1rem;
+  padding: 0.6rem 0.9rem 0.7rem;
   background: ${({ theme }) => theme.gradients.trust};
   color: #fff;
   box-shadow: 0 6px 18px rgba(8, 23, 53, 0.14);
+  width: 100%;
+  box-sizing: border-box;
 
   ${amMedia.md} {
     display: none;
@@ -57,16 +61,22 @@ const MobileNavTop = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
   margin-bottom: 0.55rem;
+  min-width: 0;
 
   h2 {
     font-family: ${({ theme }) => theme.font.heading};
-    font-size: 1rem;
+    font-size: 0.95rem;
     margin: 0;
     color: #fff;
     font-weight: 700;
     letter-spacing: 0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
   }
 `;
 
@@ -76,10 +86,12 @@ const MobileSignOut = styled.button`
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.78rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
+  flex: 0 0 auto;
+  white-space: nowrap;
 
   &:hover,
   &:focus-visible {
@@ -214,6 +226,13 @@ const NavLink = styled(NextLink)<{ $active: boolean }>`
 
 const MainCol = styled.main`
   min-width: 0;
+  padding: 0.9rem 0.9rem 2rem;
+  box-sizing: border-box;
+  width: 100%;
+
+  ${amMedia.md} {
+    padding: 0;
+  }
 `;
 
 const SignOutButton = styled.button`

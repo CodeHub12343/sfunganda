@@ -174,24 +174,32 @@ export default function DashboardOverview() {
 
 const Page = styled.section`
   display: grid;
-  gap: 1.75rem;
+  gap: 1.1rem;
+  width: 100%;
+  min-width: 0;
+
+  @media (min-width: 768px) {
+    gap: 1.75rem;
+  }
 `;
 
 const Hero = styled.div`
   position: relative;
   overflow: hidden;
-  border-radius: ${({ theme }) => theme.radius.card};
-  padding: 2rem 1.5rem;
+  border-radius: 18px;
+  padding: 1.25rem 1.1rem 1.35rem;
   color: ${({ theme }) => theme.colors.onDark};
   background: ${({ theme }) => theme.gradients.trust};
   box-shadow: ${({ theme }) => theme.shadow.soft};
+  box-sizing: border-box;
+  max-width: 100%;
 
   &::before {
     content: "";
     position: absolute;
     inset: auto -40px -80px auto;
-    width: 240px;
-    height: 240px;
+    width: 220px;
+    height: 220px;
     border-radius: 999px;
     background: ${({ theme }) => theme.gradients.sunrise};
     opacity: 0.22;
@@ -200,6 +208,7 @@ const Hero = styled.div`
   }
 
   @media (min-width: 768px) {
+    border-radius: ${({ theme }) => theme.radius.card};
     padding: 2.5rem 2.25rem;
   }
 `;
@@ -214,43 +223,52 @@ const Eyebrow = styled.div`
 
 const HeroTitle = styled.h1`
   font-family: ${({ theme }) => theme.font.heading};
-  font-size: clamp(1.75rem, 3vw + 1rem, 2.6rem);
-  line-height: 1.1;
-  margin: 0.5rem 0 0.75rem;
+  font-size: clamp(1.35rem, 5vw + 0.4rem, 2.4rem);
+  line-height: 1.15;
+  margin: 0.35rem 0 0.5rem;
   font-weight: 700;
+  overflow-wrap: break-word;
+  word-break: break-word;
 
   span {
     color: ${({ theme }) => theme.colors.hopeGold};
+    display: inline-block;
   }
 `;
 
 const HeroLede = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.onDarkSoft};
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 0.92rem;
+  line-height: 1.55;
   max-width: 56ch;
+
+  @media (min-width: 768px) {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
 `;
 
 const HeroActions = styled.div`
-  margin-top: 1.25rem;
+  margin-top: 1rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.5rem;
 `;
 
 const PrimaryBtn = styled(Link)`
   display: inline-flex;
   align-items: center;
-  padding: 0.65rem 1.1rem;
+  padding: 0.55rem 0.95rem;
   border-radius: ${({ theme }) => theme.radius.pill};
   background: ${({ theme }) => theme.gradients.sunrise};
   color: #1a0f00;
-  font-weight: 600;
-  font-size: 0.92rem;
+  font-weight: 700;
+  font-size: 0.85rem;
   text-decoration: none;
   box-shadow: ${({ theme }) => theme.shadow.glow};
   transition: transform 160ms ${({ theme }) => theme.ease.out};
+  white-space: nowrap;
 
   &:hover,
   &:focus-visible {
@@ -261,14 +279,15 @@ const PrimaryBtn = styled(Link)`
 const GhostBtn = styled(Link)`
   display: inline-flex;
   align-items: center;
-  padding: 0.65rem 1.1rem;
+  padding: 0.55rem 0.95rem;
   border-radius: ${({ theme }) => theme.radius.pill};
   background: rgba(255, 255, 255, 0.08);
   color: ${({ theme }) => theme.colors.onDark};
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   text-decoration: none;
   border: 1px solid rgba(255, 255, 255, 0.22);
+  white-space: nowrap;
 
   &:hover,
   &:focus-visible {
@@ -279,7 +298,8 @@ const GhostBtn = styled(Link)`
 const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 0.6rem;
+  width: 100%;
 
   @media (min-width: 768px) {
     gap: 1.1rem;
@@ -297,21 +317,23 @@ const accentColor: Record<Accent, string> = {
 const Tile = styled(Link)<{ accent: Accent }>`
   position: relative;
   display: block;
-  padding: 1rem 1rem 1.1rem;
-  border-radius: ${({ theme }) => theme.radius.md};
+  padding: 0.75rem 0.8rem 0.85rem 0.9rem;
+  border-radius: 14px;
   background: #ffffff;
   text-decoration: none;
   color: ${({ theme }) => theme.colors.ink};
   border: 1px solid ${({ theme }) => theme.colors.border};
   box-shadow: ${({ theme }) => theme.shadow.ring};
   overflow: hidden;
+  min-width: 0;
+  box-sizing: border-box;
   transition: transform 180ms ${({ theme }) => theme.ease.out}, box-shadow 180ms;
 
   &::before {
     content: "";
     position: absolute;
     inset: 0 auto 0 0;
-    width: 4px;
+    width: 3px;
     background: ${({ accent }) => accentColor[accent]};
   }
 
@@ -322,6 +344,7 @@ const Tile = styled(Link)<{ accent: Accent }>`
   }
 
   @media (min-width: 768px) {
+    border-radius: ${({ theme }) => theme.radius.md};
     padding: 1.25rem 1.35rem 1.4rem;
   }
 `;
@@ -331,12 +354,28 @@ const TileIcon = styled.div`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   background: rgba(16, 61, 122, 0.06);
   color: ${({ theme }) => theme.colors.trustBlue};
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.45rem;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  @media (min-width: 768px) {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    margin-bottom: 0.65rem;
+    svg {
+      width: 22px;
+      height: 22px;
+    }
+  }
 `;
 
 const Dot = styled.span`
@@ -359,27 +398,38 @@ const Dot = styled.span`
 
 const TileLabel = styled.div`
   color: ${({ theme }) => theme.colors.inkMuted};
-  font-size: 0.78rem;
-  font-weight: 500;
+  font-size: 0.68rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
+
+  @media (min-width: 768px) {
+    font-size: 0.78rem;
+  }
 `;
 
 const TileValue = styled.div`
   font-family: ${({ theme }) => theme.font.heading};
-  font-size: clamp(1.4rem, 2vw + 0.6rem, 1.9rem);
+  font-size: clamp(1.1rem, 3.8vw + 0.2rem, 1.9rem);
   font-weight: 700;
   color: ${({ theme }) => theme.colors.trustBlue};
-  margin-top: 0.25rem;
-  line-height: 1.1;
+  margin-top: 0.2rem;
+  line-height: 1.15;
   word-break: break-word;
+  overflow-wrap: break-word;
 `;
 
 const TileHint = styled.div`
-  margin-top: 0.65rem;
+  margin-top: 0.5rem;
   color: ${({ theme }) => theme.colors.sunriseOrange};
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 600;
+
+  @media (min-width: 768px) {
+    margin-top: 0.65rem;
+    font-size: 0.8rem;
+  }
 `;
 
 const Section = styled.section`
@@ -391,13 +441,18 @@ const SectionHead = styled.div`
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 
   h2 {
     font-family: ${({ theme }) => theme.font.heading};
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     color: ${({ theme }) => theme.colors.trustBlue};
     margin: 0;
+
+    @media (min-width: 768px) {
+      font-size: 1.25rem;
+    }
   }
 `;
 
@@ -415,11 +470,12 @@ const SectionLink = styled(Link)`
 
 const FollowGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
 
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
+  @media (min-width: 560px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
   }
 `;
 
@@ -491,11 +547,12 @@ const EmptyCard = styled.div`
 
 const ActionsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
 
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
+  @media (min-width: 560px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
   }
 `;
 
