@@ -41,4 +41,4 @@ AuditLogSchema.index({ organization_id: 1, entity_type: 1, entity_id: 1 });
 AuditLogSchema.index({ organization_id: 1, actor_id: 1, at: -1 });
 
 export const AuditLog =
-  mongoose.models.AuditLog ?? mongoose.model<AuditLogDoc>("AuditLog", AuditLogSchema);
+  (mongoose.models.AuditLog as mongoose.Model<AuditLogDoc> | undefined) ?? mongoose.model<AuditLogDoc>("AuditLog", AuditLogSchema);

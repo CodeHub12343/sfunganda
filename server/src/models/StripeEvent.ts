@@ -40,5 +40,4 @@ StripeEventSchema.index({ organization_id: 1, stripe_event_id: 1 }, { unique: tr
 StripeEventSchema.index({ organization_id: 1, type: 1, received_at: -1 });
 
 export const StripeEvent =
-  mongoose.models.StripeEvent ??
-  mongoose.model<StripeEventDoc>("StripeEvent", StripeEventSchema);
+  (mongoose.models.StripeEvent as mongoose.Model<StripeEventDoc> | undefined) ?? mongoose.model<StripeEventDoc>("StripeEvent", StripeEventSchema);

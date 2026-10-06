@@ -97,5 +97,4 @@ AiGenerationSchema.index({ organization_id: 1, entity_type: 1, entity_id: 1, cre
 AiGenerationSchema.index({ organization_id: 1, actor_id: 1, created_at: -1 });
 
 export const AiGeneration =
-  mongoose.models.AiGeneration ??
-  mongoose.model<AiGenerationDoc>("AiGeneration", AiGenerationSchema);
+  (mongoose.models.AiGeneration as mongoose.Model<AiGenerationDoc> | undefined) ?? mongoose.model<AiGenerationDoc>("AiGeneration", AiGenerationSchema);

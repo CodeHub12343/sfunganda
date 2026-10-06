@@ -126,5 +126,4 @@ AccomplishmentSchema.index({ organization_id: 1, project_id: 1, state: 1 });
 AccomplishmentSchema.index({ organization_id: 1, published_at: -1 }, { sparse: true });
 
 export const Accomplishment =
-  mongoose.models.Accomplishment ??
-  mongoose.model<AccomplishmentDoc>("Accomplishment", AccomplishmentSchema);
+  (mongoose.models.Accomplishment as mongoose.Model<AccomplishmentDoc> | undefined) ?? mongoose.model<AccomplishmentDoc>("Accomplishment", AccomplishmentSchema);

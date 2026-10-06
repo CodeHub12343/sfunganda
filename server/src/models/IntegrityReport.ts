@@ -49,5 +49,4 @@ IntegrityReportSchema.index({ organization_id: 1, ran_at: -1 });
 IntegrityReportSchema.index({ organization_id: 1, ok: 1, ran_at: -1 });
 
 export const IntegrityReport =
-  mongoose.models.IntegrityReport ??
-  mongoose.model<IntegrityReportDoc>("IntegrityReport", IntegrityReportSchema);
+  (mongoose.models.IntegrityReport as mongoose.Model<IntegrityReportDoc> | undefined) ?? mongoose.model<IntegrityReportDoc>("IntegrityReport", IntegrityReportSchema);

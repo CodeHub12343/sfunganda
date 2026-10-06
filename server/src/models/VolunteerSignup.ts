@@ -75,5 +75,4 @@ VolunteerSignupSchema.index({ organization_id: 1, submitted_at: -1 });
 VolunteerSignupSchema.index({ organization_id: 1, email: 1 });
 
 export const VolunteerSignup =
-  mongoose.models.VolunteerSignup ??
-  mongoose.model<VolunteerSignupDoc>("VolunteerSignup", VolunteerSignupSchema);
+  (mongoose.models.VolunteerSignup as mongoose.Model<VolunteerSignupDoc> | undefined) ?? mongoose.model<VolunteerSignupDoc>("VolunteerSignup", VolunteerSignupSchema);

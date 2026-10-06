@@ -90,5 +90,4 @@ ReconciliationSchema.index({ organization_id: 1, period_code: 1, source: 1, acco
 ReconciliationSchema.index({ organization_id: 1, status: 1, created_at: -1 });
 
 export const Reconciliation =
-  mongoose.models.Reconciliation ??
-  mongoose.model<ReconciliationDoc>("Reconciliation", ReconciliationSchema);
+  (mongoose.models.Reconciliation as mongoose.Model<ReconciliationDoc> | undefined) ?? mongoose.model<ReconciliationDoc>("Reconciliation", ReconciliationSchema);

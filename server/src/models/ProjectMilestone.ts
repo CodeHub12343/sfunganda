@@ -45,5 +45,4 @@ ProjectMilestoneSchema.index({ organization_id: 1, project_id: 1, order: 1 });
 ProjectMilestoneSchema.index({ organization_id: 1, status: 1 });
 
 export const ProjectMilestone =
-  mongoose.models.ProjectMilestone ??
-  mongoose.model<ProjectMilestoneDoc>("ProjectMilestone", ProjectMilestoneSchema);
+  (mongoose.models.ProjectMilestone as mongoose.Model<ProjectMilestoneDoc> | undefined) ?? mongoose.model<ProjectMilestoneDoc>("ProjectMilestone", ProjectMilestoneSchema);

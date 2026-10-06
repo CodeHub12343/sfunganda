@@ -89,4 +89,4 @@ const OrganizationSchema = new Schema<OrganizationDoc>(
 OrganizationSchema.index({ domains: 1 });
 
 export const Organization =
-  mongoose.models.Organization ?? mongoose.model<OrganizationDoc>("Organization", OrganizationSchema);
+  (mongoose.models.Organization as mongoose.Model<OrganizationDoc> | undefined) ?? mongoose.model<OrganizationDoc>("Organization", OrganizationSchema);

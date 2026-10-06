@@ -112,5 +112,4 @@ BusinessProductionSchema.index(
 );
 
 export const BusinessProduction =
-  mongoose.models.BusinessProduction ??
-  mongoose.model<BusinessProductionDoc>("BusinessProduction", BusinessProductionSchema);
+  (mongoose.models.BusinessProduction as mongoose.Model<BusinessProductionDoc> | undefined) ?? mongoose.model<BusinessProductionDoc>("BusinessProduction", BusinessProductionSchema);

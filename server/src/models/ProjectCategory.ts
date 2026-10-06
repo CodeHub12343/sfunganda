@@ -28,5 +28,4 @@ const ProjectCategorySchema = new Schema<ProjectCategoryDoc>(
 ProjectCategorySchema.index({ organization_id: 1, slug: 1 }, { unique: true });
 
 export const ProjectCategory =
-  mongoose.models.ProjectCategory ??
-  mongoose.model<ProjectCategoryDoc>("ProjectCategory", ProjectCategorySchema);
+  (mongoose.models.ProjectCategory as mongoose.Model<ProjectCategoryDoc> | undefined) ?? mongoose.model<ProjectCategoryDoc>("ProjectCategory", ProjectCategorySchema);

@@ -85,4 +85,4 @@ LoanSchema.index(
 LoanSchema.index({ organization_id: 1, status: 1 });
 LoanSchema.index({ organization_id: 1, counterparty_identifier: 1 }, { sparse: true });
 
-export const Loan = mongoose.models.Loan ?? mongoose.model<LoanDoc>("Loan", LoanSchema);
+export const Loan = (mongoose.models.Loan as mongoose.Model<LoanDoc> | undefined) ?? mongoose.model<LoanDoc>("Loan", LoanSchema);

@@ -56,5 +56,4 @@ ApprovalEventSchema.index({ organization_id: 1, created_at: -1 });
 ApprovalEventSchema.index({ organization_id: 1, kind: 1, created_at: -1 });
 
 export const ApprovalEvent =
-  mongoose.models.ApprovalEvent ??
-  mongoose.model<ApprovalEventDoc>("ApprovalEvent", ApprovalEventSchema);
+  (mongoose.models.ApprovalEvent as mongoose.Model<ApprovalEventDoc> | undefined) ?? mongoose.model<ApprovalEventDoc>("ApprovalEvent", ApprovalEventSchema);

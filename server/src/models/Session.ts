@@ -40,4 +40,4 @@ SessionSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
 SessionSchema.index({ user_id: 1, revoked_at: 1 });
 
 export const Session =
-  mongoose.models.Session ?? mongoose.model<SessionDoc>("Session", SessionSchema);
+  (mongoose.models.Session as mongoose.Model<SessionDoc> | undefined) ?? mongoose.model<SessionDoc>("Session", SessionSchema);

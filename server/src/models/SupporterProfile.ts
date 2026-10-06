@@ -96,5 +96,4 @@ SupporterProfileSchema.index({ organization_id: 1, user_id: 1 }, { unique: true 
 SupporterProfileSchema.index({ unsubscribe_token_hash: 1 }, { unique: true });
 
 export const SupporterProfile =
-  mongoose.models.SupporterProfile ??
-  mongoose.model<SupporterProfileDoc>("SupporterProfile", SupporterProfileSchema);
+  (mongoose.models.SupporterProfile as mongoose.Model<SupporterProfileDoc> | undefined) ?? mongoose.model<SupporterProfileDoc>("SupporterProfile", SupporterProfileSchema);

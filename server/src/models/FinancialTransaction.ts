@@ -155,5 +155,4 @@ FinancialTransactionSchema.index(
 );
 
 export const FinancialTransaction =
-  mongoose.models.FinancialTransaction ??
-  mongoose.model<FinancialTransactionDoc>("FinancialTransaction", FinancialTransactionSchema);
+  (mongoose.models.FinancialTransaction as mongoose.Model<FinancialTransactionDoc> | undefined) ?? mongoose.model<FinancialTransactionDoc>("FinancialTransaction", FinancialTransactionSchema);

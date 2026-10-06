@@ -66,4 +66,4 @@ LedgerEntrySchema.index({ organization_id: 1, business_id: 1, posted_at: -1 }, {
 LedgerEntrySchema.index({ hash: 1 }, { unique: true });
 
 export const LedgerEntry =
-  mongoose.models.LedgerEntry ?? mongoose.model<LedgerEntryDoc>("LedgerEntry", LedgerEntrySchema);
+  (mongoose.models.LedgerEntry as mongoose.Model<LedgerEntryDoc> | undefined) ?? mongoose.model<LedgerEntryDoc>("LedgerEntry", LedgerEntrySchema);

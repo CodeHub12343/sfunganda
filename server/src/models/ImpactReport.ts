@@ -227,5 +227,4 @@ ImpactReportSchema.index(
 ImpactReportSchema.index({ organization_id: 1, state: 1, period_code: -1 });
 
 export const ImpactReport =
-  mongoose.models.ImpactReport ??
-  mongoose.model<ImpactReportDoc>("ImpactReport", ImpactReportSchema);
+  (mongoose.models.ImpactReport as mongoose.Model<ImpactReportDoc> | undefined) ?? mongoose.model<ImpactReportDoc>("ImpactReport", ImpactReportSchema);

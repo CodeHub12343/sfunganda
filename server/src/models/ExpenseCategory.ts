@@ -38,5 +38,4 @@ const ExpenseCategorySchema = new Schema<ExpenseCategoryDoc>(
 ExpenseCategorySchema.index({ organization_id: 1, slug: 1 }, { unique: true });
 
 export const ExpenseCategory =
-  mongoose.models.ExpenseCategory ??
-  mongoose.model<ExpenseCategoryDoc>("ExpenseCategory", ExpenseCategorySchema);
+  (mongoose.models.ExpenseCategory as mongoose.Model<ExpenseCategoryDoc> | undefined) ?? mongoose.model<ExpenseCategoryDoc>("ExpenseCategory", ExpenseCategorySchema);

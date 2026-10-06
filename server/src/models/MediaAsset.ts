@@ -170,4 +170,4 @@ MediaAssetSchema.index({ "provider.asset_id": 1 }, { sparse: true });
 MediaAssetSchema.index({ bucket: 1, key: 1 }, { unique: true });
 
 export const MediaAsset =
-  mongoose.models.MediaAsset ?? mongoose.model<MediaAssetDoc>("MediaAsset", MediaAssetSchema);
+  (mongoose.models.MediaAsset as mongoose.Model<MediaAssetDoc> | undefined) ?? mongoose.model<MediaAssetDoc>("MediaAsset", MediaAssetSchema);

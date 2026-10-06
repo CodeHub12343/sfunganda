@@ -68,4 +68,4 @@ ProjectSchema.index({ organization_id: 1, status: 1, updated_at: -1 });
 ProjectSchema.index({ organization_id: 1, community_id: 1 });
 
 export const Project =
-  mongoose.models.Project ?? mongoose.model<ProjectDoc>("Project", ProjectSchema);
+  (mongoose.models.Project as mongoose.Model<ProjectDoc> | undefined) ?? mongoose.model<ProjectDoc>("Project", ProjectSchema);

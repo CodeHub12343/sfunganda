@@ -45,5 +45,4 @@ VideoTranslationSchema.index(
 VideoTranslationSchema.index({ state: 1, created_at: 1 });
 
 export const VideoTranslation =
-  mongoose.models.VideoTranslation ??
-  mongoose.model<VideoTranslationDoc>("VideoTranslation", VideoTranslationSchema);
+  (mongoose.models.VideoTranslation as mongoose.Model<VideoTranslationDoc> | undefined) ?? mongoose.model<VideoTranslationDoc>("VideoTranslation", VideoTranslationSchema);

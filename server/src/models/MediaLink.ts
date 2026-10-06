@@ -49,4 +49,4 @@ MediaLinkSchema.index(
 );
 
 export const MediaLink =
-  mongoose.models.MediaLink ?? mongoose.model<MediaLinkDoc>("MediaLink", MediaLinkSchema);
+  (mongoose.models.MediaLink as mongoose.Model<MediaLinkDoc> | undefined) ?? mongoose.model<MediaLinkDoc>("MediaLink", MediaLinkSchema);

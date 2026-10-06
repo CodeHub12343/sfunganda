@@ -72,4 +72,4 @@ const FundSchema = new Schema<FundDoc>(
 FundSchema.index({ organization_id: 1, code: 1 }, { unique: true });
 FundSchema.index({ organization_id: 1, project_id: 1 }, { sparse: true });
 
-export const Fund = mongoose.models.Fund ?? mongoose.model<FundDoc>("Fund", FundSchema);
+export const Fund = (mongoose.models.Fund as mongoose.Model<FundDoc> | undefined) ?? mongoose.model<FundDoc>("Fund", FundSchema);

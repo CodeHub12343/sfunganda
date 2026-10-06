@@ -50,4 +50,4 @@ NotificationSchema.index({ user_id: 1, read_at: 1, created_at: -1 });
 NotificationSchema.index({ organization_id: 1, topic: 1, created_at: -1 });
 
 export const Notification =
-  mongoose.models.Notification ?? mongoose.model<NotificationDoc>("Notification", NotificationSchema);
+  (mongoose.models.Notification as mongoose.Model<NotificationDoc> | undefined) ?? mongoose.model<NotificationDoc>("Notification", NotificationSchema);

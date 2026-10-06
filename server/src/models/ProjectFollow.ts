@@ -24,5 +24,4 @@ ProjectFollowSchema.index({ project_id: 1 });
 ProjectFollowSchema.index({ organization_id: 1, user_id: 1 });
 
 export const ProjectFollow =
-  mongoose.models.ProjectFollow ??
-  mongoose.model<ProjectFollowDoc>("ProjectFollow", ProjectFollowSchema);
+  (mongoose.models.ProjectFollow as mongoose.Model<ProjectFollowDoc> | undefined) ?? mongoose.model<ProjectFollowDoc>("ProjectFollow", ProjectFollowSchema);

@@ -66,5 +66,4 @@ ConsentRecordSchema.index({ organization_id: 1, subject_identifier: 1, revoked_a
 ConsentRecordSchema.index({ organization_id: 1, granted_at: -1 });
 
 export const ConsentRecord =
-  mongoose.models.ConsentRecord ??
-  mongoose.model<ConsentRecordDoc>("ConsentRecord", ConsentRecordSchema);
+  (mongoose.models.ConsentRecord as mongoose.Model<ConsentRecordDoc> | undefined) ?? mongoose.model<ConsentRecordDoc>("ConsentRecord", ConsentRecordSchema);

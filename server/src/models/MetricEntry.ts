@@ -38,4 +38,4 @@ MetricEntrySchema.index({ organization_id: 1, project_id: 1, occurred_on: -1 });
 MetricEntrySchema.index({ accomplishment_id: 1 });
 
 export const MetricEntry =
-  mongoose.models.MetricEntry ?? mongoose.model<MetricEntryDoc>("MetricEntry", MetricEntrySchema);
+  (mongoose.models.MetricEntry as mongoose.Model<MetricEntryDoc> | undefined) ?? mongoose.model<MetricEntryDoc>("MetricEntry", MetricEntrySchema);

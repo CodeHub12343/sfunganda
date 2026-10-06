@@ -40,5 +40,4 @@ const MetricDefinitionSchema = new Schema<MetricDefinitionDoc>(
 MetricDefinitionSchema.index({ organization_id: 1, key: 1 }, { unique: true });
 
 export const MetricDefinition =
-  mongoose.models.MetricDefinition ??
-  mongoose.model<MetricDefinitionDoc>("MetricDefinition", MetricDefinitionSchema);
+  (mongoose.models.MetricDefinition as mongoose.Model<MetricDefinitionDoc> | undefined) ?? mongoose.model<MetricDefinitionDoc>("MetricDefinition", MetricDefinitionSchema);

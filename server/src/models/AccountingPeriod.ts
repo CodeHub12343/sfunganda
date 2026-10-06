@@ -61,5 +61,4 @@ AccountingPeriodSchema.index({ organization_id: 1, code: 1 }, { unique: true });
 AccountingPeriodSchema.index({ organization_id: 1, status: 1 });
 
 export const AccountingPeriod =
-  mongoose.models.AccountingPeriod ??
-  mongoose.model<AccountingPeriodDoc>("AccountingPeriod", AccountingPeriodSchema);
+  (mongoose.models.AccountingPeriod as mongoose.Model<AccountingPeriodDoc> | undefined) ?? mongoose.model<AccountingPeriodDoc>("AccountingPeriod", AccountingPeriodSchema);

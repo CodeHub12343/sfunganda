@@ -59,5 +59,4 @@ RoleAssignmentSchema.index(
 RoleAssignmentSchema.index({ organization_id: 1, user_id: 1, revoked_at: 1 });
 
 export const RoleAssignment =
-  mongoose.models.RoleAssignment ??
-  mongoose.model<RoleAssignmentDoc>("RoleAssignment", RoleAssignmentSchema);
+  (mongoose.models.RoleAssignment as mongoose.Model<RoleAssignmentDoc> | undefined) ?? mongoose.model<RoleAssignmentDoc>("RoleAssignment", RoleAssignmentSchema);

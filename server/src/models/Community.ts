@@ -61,4 +61,4 @@ CommunitySchema.pre("validate", function (this: CommunityDoc, next) {
 });
 
 export const Community =
-  mongoose.models.Community ?? mongoose.model<CommunityDoc>("Community", CommunitySchema);
+  (mongoose.models.Community as mongoose.Model<CommunityDoc> | undefined) ?? mongoose.model<CommunityDoc>("Community", CommunitySchema);

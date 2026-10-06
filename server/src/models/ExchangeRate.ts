@@ -37,5 +37,4 @@ ExchangeRateSchema.index(
 ExchangeRateSchema.index({ organization_id: 1, on_date: -1 });
 
 export const ExchangeRate =
-  mongoose.models.ExchangeRate ??
-  mongoose.model<ExchangeRateDoc>("ExchangeRate", ExchangeRateSchema);
+  (mongoose.models.ExchangeRate as mongoose.Model<ExchangeRateDoc> | undefined) ?? mongoose.model<ExchangeRateDoc>("ExchangeRate", ExchangeRateSchema);

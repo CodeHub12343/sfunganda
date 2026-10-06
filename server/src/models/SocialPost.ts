@@ -72,4 +72,4 @@ SocialPostSchema.index({ organization_id: 1, accomplishment_id: 1 });
 SocialPostSchema.index({ organization_id: 1, connection_id: 1, state: 1 });
 
 export const SocialPost =
-  mongoose.models.SocialPost ?? mongoose.model<SocialPostDoc>("SocialPost", SocialPostSchema);
+  (mongoose.models.SocialPost as mongoose.Model<SocialPostDoc> | undefined) ?? mongoose.model<SocialPostDoc>("SocialPost", SocialPostSchema);

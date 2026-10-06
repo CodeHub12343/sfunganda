@@ -95,5 +95,4 @@ SocialConnectionSchema.index(
 SocialConnectionSchema.index({ organization_id: 1, status: 1, platform: 1 });
 
 export const SocialConnection =
-  mongoose.models.SocialConnection ??
-  mongoose.model<SocialConnectionDoc>("SocialConnection", SocialConnectionSchema);
+  (mongoose.models.SocialConnection as mongoose.Model<SocialConnectionDoc> | undefined) ?? mongoose.model<SocialConnectionDoc>("SocialConnection", SocialConnectionSchema);

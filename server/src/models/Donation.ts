@@ -105,4 +105,4 @@ DonationSchema.index(
 );
 
 export const Donation =
-  mongoose.models.Donation ?? mongoose.model<DonationDoc>("Donation", DonationSchema);
+  (mongoose.models.Donation as mongoose.Model<DonationDoc> | undefined) ?? mongoose.model<DonationDoc>("Donation", DonationSchema);

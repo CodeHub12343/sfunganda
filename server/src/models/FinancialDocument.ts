@@ -56,5 +56,4 @@ FinancialDocumentSchema.index({ organization_id: 1, created_at: -1 });
 FinancialDocumentSchema.index({ transaction_ids: 1 });
 
 export const FinancialDocument =
-  mongoose.models.FinancialDocument ??
-  mongoose.model<FinancialDocumentDoc>("FinancialDocument", FinancialDocumentSchema);
+  (mongoose.models.FinancialDocument as mongoose.Model<FinancialDocumentDoc> | undefined) ?? mongoose.model<FinancialDocumentDoc>("FinancialDocument", FinancialDocumentSchema);

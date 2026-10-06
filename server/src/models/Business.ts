@@ -85,4 +85,4 @@ BusinessSchema.index({ organization_id: 1, slug: 1 }, { unique: true });
 BusinessSchema.index({ organization_id: 1, community_id: 1, status: 1 });
 
 export const Business =
-  mongoose.models.Business ?? mongoose.model<BusinessDoc>("Business", BusinessSchema);
+  (mongoose.models.Business as mongoose.Model<BusinessDoc> | undefined) ?? mongoose.model<BusinessDoc>("Business", BusinessSchema);

@@ -59,8 +59,7 @@ BeneficiaryFundSummarySchema.index(
 );
 
 export const BeneficiaryFundSummary =
-  mongoose.models.BeneficiaryFundSummary ??
-  mongoose.model<BeneficiaryFundSummaryDoc>(
+  (mongoose.models.BeneficiaryFundSummary as mongoose.Model<BeneficiaryFundSummaryDoc> | undefined) ?? mongoose.model<BeneficiaryFundSummaryDoc>(
     "BeneficiaryFundSummary",
     BeneficiaryFundSummarySchema
   );

@@ -46,5 +46,4 @@ AccomplishmentRevisionSchema.index({ accomplishment_id: 1, version: -1 });
 AccomplishmentRevisionSchema.index({ organization_id: 1, created_at: -1 });
 
 export const AccomplishmentRevision =
-  mongoose.models.AccomplishmentRevision ??
-  mongoose.model<AccomplishmentRevisionDoc>("AccomplishmentRevision", AccomplishmentRevisionSchema);
+  (mongoose.models.AccomplishmentRevision as mongoose.Model<AccomplishmentRevisionDoc> | undefined) ?? mongoose.model<AccomplishmentRevisionDoc>("AccomplishmentRevision", AccomplishmentRevisionSchema);

@@ -25,4 +25,4 @@ const IdSequenceSchema = new Schema<IdSequenceDoc>(
 IdSequenceSchema.index({ organization_id: 1, kind: 1, year: 1 }, { unique: true });
 
 export const IdSequence =
-  mongoose.models.IdSequence ?? mongoose.model<IdSequenceDoc>("IdSequence", IdSequenceSchema);
+  (mongoose.models.IdSequence as mongoose.Model<IdSequenceDoc> | undefined) ?? mongoose.model<IdSequenceDoc>("IdSequence", IdSequenceSchema);

@@ -72,5 +72,4 @@ VideoCaptionSchema.index(
 );
 
 export const VideoCaption =
-  mongoose.models.VideoCaption ??
-  mongoose.model<VideoCaptionDoc>("VideoCaption", VideoCaptionSchema);
+  (mongoose.models.VideoCaption as mongoose.Model<VideoCaptionDoc> | undefined) ?? mongoose.model<VideoCaptionDoc>("VideoCaption", VideoCaptionSchema);

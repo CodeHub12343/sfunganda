@@ -60,5 +60,4 @@ EmailDeliverySchema.index({ organization_id: 1, status: 1, created_at: -1 });
 EmailDeliverySchema.index({ to_email: 1, template: 1, created_at: -1 });
 
 export const EmailDelivery =
-  mongoose.models.EmailDelivery ??
-  mongoose.model<EmailDeliveryDoc>("EmailDelivery", EmailDeliverySchema);
+  (mongoose.models.EmailDelivery as mongoose.Model<EmailDeliveryDoc> | undefined) ?? mongoose.model<EmailDeliveryDoc>("EmailDelivery", EmailDeliverySchema);

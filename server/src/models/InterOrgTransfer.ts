@@ -77,5 +77,4 @@ Schema_.index({ from_organization_id: 1, state: 1, created_at: -1 });
 Schema_.index({ to_organization_id: 1, state: 1, created_at: -1 });
 
 export const InterOrgTransfer =
-  mongoose.models.InterOrgTransfer ??
-  mongoose.model<InterOrgTransferDoc>("InterOrgTransfer", Schema_);
+  (mongoose.models.InterOrgTransfer as mongoose.Model<InterOrgTransferDoc> | undefined) ?? mongoose.model<InterOrgTransferDoc>("InterOrgTransfer", Schema_);

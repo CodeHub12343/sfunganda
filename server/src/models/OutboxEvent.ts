@@ -43,5 +43,4 @@ OutboxEventSchema.index({ status: 1, available_at: 1 });
 OutboxEventSchema.index({ topic: 1, status: 1 });
 
 export const OutboxEvent =
-  mongoose.models.OutboxEvent ??
-  mongoose.model<OutboxEventDoc>("OutboxEvent", OutboxEventSchema);
+  (mongoose.models.OutboxEvent as mongoose.Model<OutboxEventDoc> | undefined) ?? mongoose.model<OutboxEventDoc>("OutboxEvent", OutboxEventSchema);

@@ -53,4 +53,4 @@ const UserSchema = new Schema<UserDoc>(
 UserSchema.index({ organization_id: 1, email: 1 }, { unique: true });
 UserSchema.index({ invite_token_hash: 1 }, { sparse: true });
 
-export const User = mongoose.models.User ?? mongoose.model<UserDoc>("User", UserSchema);
+export const User = (mongoose.models.User as mongoose.Model<UserDoc> | undefined) ?? mongoose.model<UserDoc>("User", UserSchema);

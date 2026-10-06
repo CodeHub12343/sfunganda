@@ -69,5 +69,4 @@ ReportExportSchema.index({ organization_id: 1, report_id: 1, requested_at: -1 })
 ReportExportSchema.index({ state: 1, requested_at: 1 });
 
 export const ReportExport =
-  mongoose.models.ReportExport ??
-  mongoose.model<ReportExportDoc>("ReportExport", ReportExportSchema);
+  (mongoose.models.ReportExport as mongoose.Model<ReportExportDoc> | undefined) ?? mongoose.model<ReportExportDoc>("ReportExport", ReportExportSchema);
