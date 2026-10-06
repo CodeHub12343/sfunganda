@@ -8,6 +8,7 @@ import {
   Organization,
   Project,
   StripeEvent,
+  User,
 } from "@/models/index.js";
 import { AppError } from "@/util/errors.js";
 import { env } from "@/config/env.js";
@@ -196,6 +197,39 @@ async function handleCharge(ev: StripeEventPayload, orgId: mongoose.Types.Object
     return;
   }
 
+  // Normalize donor email once so every downstream query (dashboard
+  // lookup, signup backfill, auto-link below) compares apples to apples.
+  const rawEmail = obj.billing_details?.email ?? null;
+  const normalizedEmail = rawEmail ? rawEmail.trim().toLowerCase() : null;
+
+  // Resolve supporter link. Metadata set by the signed-in donate route
+  // wins — it was authenticated by a session cookie. We still validate
+  // the user exists in this organization before trusting it. Fall back
+  // to a case-insensitive lookup by the normalized billing email so a
+  // donation made after signup still lands in the right dashboard.
+  const metaSupporterId = obj.metadata?.supporter_user_id ?? null;
+  let supporterUserId: mongoose.Types.ObjectId | null = null;
+  if (metaSupporterId && mongoose.isValidObjectId(metaSupporterId)) {
+    const u = await User.findOne({
+      _id: new mongoose.Types.ObjectId(metaSupporterId),
+      organization_id: orgId,
+      status: "active",
+    })
+      .select({ _id: 1 })
+      .lean();
+    if (u) supporterUserId = u._id;
+  }
+  if (!supporterUserId && normalizedEmail) {
+    const u = await User.findOne({
+      organization_id: orgId,
+      email: normalizedEmail,
+      email_verified_at: { $ne: null },
+    })
+      .select({ _id: 1 })
+      .lean();
+    if (u) supporterUserId = u._id;
+  }
+
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -213,7 +247,8 @@ async function handleCharge(ev: StripeEventPayload, orgId: mongoose.Types.Object
               organization_id: orgId,
               public_id: pubId,
               donor_name: obj.billing_details?.name ?? null,
-              donor_email: obj.billing_details?.email ?? null,
+              donor_email: normalizedEmail,
+              supporter_user_id: supporterUserId,
               anonymous: obj.metadata?.anonymous === "true",
               project_id,
               fund_id: fund!._id,
@@ -239,6 +274,11 @@ async function handleCharge(ev: StripeEventPayload, orgId: mongoose.Types.Object
         );
       } else {
         donation.status = "succeeded";
+        // Backfill the supporter link on replay if we didn't know it the
+        // first time (e.g. a later signup created the matching user).
+        if (!donation.supporter_user_id && supporterUserId) {
+          donation.supporter_user_id = supporterUserId;
+        }
         await donation.save({ session });
       }
       if (!donation) throw new AppError("internal_error", "donation upsert failed");

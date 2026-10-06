@@ -94,5 +94,9 @@ export const donateCheckoutBody = z.object({
   donor_name: z.string().max(160).optional(),
   donor_email: z.string().email().max(254).optional(),
   anonymous: z.boolean().optional().default(false),
+  // Not accepted from the client. The donate route populates it from
+  // the session cookie when the donor is signed in, so the webhook can
+  // link the donation to their supporter account authoritatively.
+  supporter_user_id: z.never().optional(),
 });
 export type DonateCheckoutBody = z.infer<typeof donateCheckoutBody>;

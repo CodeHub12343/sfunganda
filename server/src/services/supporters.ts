@@ -158,13 +158,20 @@ async function activateSupporter(
   const linkResult = await Donation.updateMany(
     {
       organization_id: orgId,
-      donor_email: user.email,
+      // Case-insensitive match: legacy donations captured mixed-case
+      // billing emails straight from Stripe (`Jane@Example.com`), while
+      // user.email is stored lower-cased. An exact match would miss them.
+      donor_email: { $regex: `^${escapeRegex(user.email)}$`, $options: "i" },
       $or: [{ supporter_user_id: null }, { supporter_user_id: { $exists: false } }],
     },
     { $set: { supporter_user_id: user._id } },
     { session }
   );
   return { linked_donations: linkResult.modifiedCount ?? 0 };
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export async function resendVerification(email: string): Promise<{ ok: true }> {
@@ -277,7 +284,7 @@ export async function verifyEmail(token: string): Promise<{ user_id: string; lin
       const linkResult = await Donation.updateMany(
         {
           organization_id: orgId,
-          donor_email: user.email,
+          donor_email: { $regex: `^${escapeRegex(user.email)}$`, $options: "i" },
           $or: [{ supporter_user_id: null }, { supporter_user_id: { $exists: false } }],
         },
         { $set: { supporter_user_id: user._id } },
