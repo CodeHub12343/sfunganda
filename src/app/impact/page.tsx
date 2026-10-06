@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: "Totals and metrics across our work.",
 };
 
+export const dynamic = "force-dynamic";
+
 type Impact = {
   totals: { projects: number; communities: number; accomplishments: number };
   metrics: Array<{ key: string; label: string; unit: string; value: number }>;

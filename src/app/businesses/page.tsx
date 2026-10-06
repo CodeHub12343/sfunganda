@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Poultry, farming, crafts and small shops the foundation runs to feed and fund the children's home.",
 };
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
 
 type Business = {
   slug: string;

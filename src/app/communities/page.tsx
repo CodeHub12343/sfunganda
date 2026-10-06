@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "The communities Sarah's Foundation works in — coarse map locations and the active programmes in each.",
 };
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
 
 type CommunityItem = {
   slug: string;
