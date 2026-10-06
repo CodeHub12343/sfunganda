@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { Button as LegacyButton } from "@/components/ui/Button";
 import { Uploader } from "@/components/ui/Uploader";
@@ -10,7 +10,6 @@ import {
   ErrorState,
   LoadingState,
 } from "@/components/ui/States";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api, ApiClientError } from "@/lib/api";
 import { useFlag } from "@/lib/flags";
 import {
@@ -325,20 +324,6 @@ const Field = styled.label`
   color: var(--am-ink-muted);
 `;
 
-const Input = styled.input`
-  min-height: 44px;
-  padding: 0 12px;
-  border-radius: var(--am-radius-md);
-  background: var(--am-surface);
-  color: var(--am-ink);
-  border: 1px solid var(--am-border-strong);
-  font: inherit;
-  &:focus {
-    outline: 2px solid var(--am-brand-500);
-    outline-offset: 2px;
-    border-color: var(--am-brand-500);
-  }
-`;
 
 const Textarea = styled.textarea`
   min-height: 76px;

@@ -24,7 +24,6 @@ import {
   EmptyState,
   FilterChip,
   ListRow,
-  Modal,
   SearchField,
   Sheet,
   Skeleton,
