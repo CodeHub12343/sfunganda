@@ -739,7 +739,7 @@ function LegacyDetail({ id }: { id: string }) {
             {project.slug} · v{project.version}
           </small>
         </div>
-        <StatusBadge tone={project.status === "active" ? "active" : "pending"}>
+        <StatusBadge tone={project.status === "active" ? "success" : "warning"}>
           {project.status}
         </StatusBadge>
       </header>

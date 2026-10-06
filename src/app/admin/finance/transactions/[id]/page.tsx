@@ -770,7 +770,7 @@ function LegacyTxn({ id }: { id: string }) {
               : null}
           </small>
         </div>
-        <StatusBadge tone={doc.state === "posted" ? "active" : "pending"}>{doc.state}</StatusBadge>
+        <StatusBadge tone={doc.state === "posted" ? "success" : "warning"}>{doc.state}</StatusBadge>
       </header>
 
       <section style={legacyCard}>

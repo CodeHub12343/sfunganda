@@ -381,7 +381,7 @@ function LegacyQueue() {
                       : null}
                   </small>
                 </div>
-                <StatusBadge tone={r.state === "published" ? "active" : "pending"}>
+                <StatusBadge tone={r.state === "published" ? "success" : "warning"}>
                   {r.state}
                 </StatusBadge>
               </div>
