@@ -18,7 +18,7 @@ const Root = styled(Card)`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-width: 160px;
+  min-width: 0;
   min-height: 112px;
 `;
 

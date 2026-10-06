@@ -60,25 +60,14 @@ const Subtitle = styled.p`
 `;
 
 const Scroller = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  overflow-x: auto;
-  margin: 0 -16px;
-  padding: 4px 16px 8px;
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  & > * {
-    flex-shrink: 0;
-  }
+  padding: 4px 0 8px;
 
   ${amMedia.md} {
-    display: grid;
     grid-template-columns: repeat(4, 1fr);
-    margin: 0;
     padding: 0;
-    overflow: visible;
   }
 `;
 
