@@ -571,7 +571,7 @@ function LegacyFinance() {
                   </small>
                   {t.memo ? <p style={{ margin: "0.3rem 0 0" }}>{t.memo}</p> : null}
                 </div>
-                <StatusBadge tone={t.state === "posted" ? "active" : "pending"}>
+                <StatusBadge tone={t.state === "posted" ? "success" : "warning"}>
                   {t.state}
                 </StatusBadge>
               </div>
