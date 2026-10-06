@@ -44,10 +44,10 @@ export function PostStatusList({ accomplishmentId }: { accomplishmentId: string 
   async function retry(id: string) {
     try {
       await api(`/social/posts/${id}/retry`, { json: {} });
-      toast.show("Retry queued", "ok");
+      toast.push({ message: "Retry queued", tone: "success" });
       await load();
     } catch (e) {
-      toast.show((e as ApiClientError).message, "error");
+      toast.push({ message: (e as ApiClientError).message, tone: "danger" });
     }
   }
 

@@ -54,9 +54,9 @@ export default function PeriodsPage() {
       await api("/finance/periods", { json: { code: newCode } });
       setNewCode("");
       void load();
-      toast.show("Period opened", "ok");
+      toast.push({ message: "Period opened", tone: "success" });
     } catch (e) {
-      toast.show((e as ApiClientError).message, "error");
+      toast.push({ message: (e as ApiClientError).message, tone: "danger" });
     }
   }
 
@@ -66,9 +66,9 @@ export default function PeriodsPage() {
         json: { status, version },
       });
       void load();
-      toast.show("Updated", "ok");
+      toast.push({ message: "Updated", tone: "success" });
     } catch (e) {
-      toast.show((e as ApiClientError).message, "error");
+      toast.push({ message: (e as ApiClientError).message, tone: "danger" });
     }
   }
 
