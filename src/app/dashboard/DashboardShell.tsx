@@ -3,7 +3,7 @@
 import NextLink from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import styled from "styled-components";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { amMedia } from "@/components/admin-mobile/tokens";
 import { ToastProvider } from "@/components/ui/Toast";
 import { api } from "@/lib/api";
@@ -22,80 +22,153 @@ const NAV = [
 ];
 
 const Wrap = styled.div`
-  max-width: 1100px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 1rem 1rem 2.5rem;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: 1.25rem;
 
   ${amMedia.md} {
-    padding: 2rem 1.25rem 4rem;
-    grid-template-columns: 220px 1fr;
-    gap: 2rem;
+    padding: 2rem 1.5rem 4rem;
+    grid-template-columns: 240px 1fr;
+    gap: 2.25rem;
   }
 `;
 
-const MobileHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+/* ---------------- Mobile top-nav (replaces hamburger) ---------------- */
+
+const MobileNav = styled.nav`
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: -1rem -1rem 0;
+  padding: 0.65rem 1rem;
+  background: ${({ theme }) => theme.gradients.trust};
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(8, 23, 53, 0.14);
 
   ${amMedia.md} {
     display: none;
   }
 `;
 
-const MobileTitle = styled.h1`
-  font-size: 1.05rem;
-  margin: 0;
-  color: #111827;
+const MobileNavTop = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+
+  h2 {
+    font-family: ${({ theme }) => theme.font.heading};
+    font-size: 1rem;
+    margin: 0;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
 `;
 
-const MenuButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.75rem;
-  font-size: 0.9rem;
-  background: #fff;
-  color: #111827;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+const MobileSignOut = styled.button`
+  appearance: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
   cursor: pointer;
 
   &:hover,
   &:focus-visible {
-    background: #f9fafb;
+    background: rgba(255, 255, 255, 0.2);
   }
 `;
 
-const Aside = styled.aside<{ $open: boolean }>`
-  display: ${({ $open }) => ($open ? "block" : "none")};
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 0.75rem;
+const TabRow = styled.div`
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 0.2rem;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
+const Tab = styled(NextLink)<{ $active: boolean }>`
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+
+  background: ${({ $active }) =>
+    $active
+      ? "linear-gradient(135deg, #F7B733 0%, #F28C28 100%)"
+      : "rgba(255, 255, 255, 0.08)"};
+  color: ${({ $active }) => ($active ? "#1a0f00" : "rgba(255,255,255,0.9)")};
+  border: 1px solid
+    ${({ $active }) => ($active ? "transparent" : "rgba(255, 255, 255, 0.18)")};
+  box-shadow: ${({ $active }) =>
+    $active ? "0 6px 18px rgba(242, 140, 40, 0.35)" : "none"};
+
+  &:hover,
+  &:focus-visible {
+    background: ${({ $active }) =>
+      $active
+        ? "linear-gradient(135deg, #F7B733 0%, #F28C28 100%)"
+        : "rgba(255, 255, 255, 0.16)"};
+    color: ${({ $active }) => ($active ? "#1a0f00" : "#fff")};
+  }
+`;
+
+/* ---------------- Desktop sidebar ---------------- */
+
+const Aside = styled.aside`
+  display: none;
 
   ${amMedia.md} {
     display: block;
-    background: transparent;
-    border: none;
-    padding: 0;
+    background: #fff;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    border-radius: ${({ theme }) => theme.radius.md};
+    padding: 1rem;
+    box-shadow: ${({ theme }) => theme.shadow.ring};
+    height: fit-content;
+    position: sticky;
+    top: 1.5rem;
   }
+`;
+
+const AsideHeader = styled.div`
+  padding: 0.4rem 0.6rem 0.9rem;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  margin-bottom: 0.75rem;
 
   h2 {
-    font-size: 1rem;
-    margin: 0 0 0.75rem;
-    color: #111827;
-    display: none;
+    font-family: ${({ theme }) => theme.font.heading};
+    font-size: 1.05rem;
+    color: ${({ theme }) => theme.colors.trustBlue};
+    margin: 0;
+    font-weight: 700;
   }
 
-  ${amMedia.md} {
-    h2 {
-      display: block;
-    }
+  small {
+    display: block;
+    margin-top: 0.2rem;
+    color: ${({ theme }) => theme.colors.inkMuted};
+    font-size: 0.78rem;
   }
 `;
 
@@ -104,22 +177,38 @@ const NavList = styled.ul`
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.25rem;
+  gap: 0.2rem;
 `;
 
 const NavLink = styled(NextLink)<{ $active: boolean }>`
-  display: block;
+  display: flex;
+  align-items: center;
   padding: 0.6rem 0.85rem;
-  border-radius: 8px;
-  color: #111827;
+  border-radius: 10px;
+  color: ${({ theme, $active }) =>
+    $active ? theme.colors.trustBlue : theme.colors.inkSoft};
   text-decoration: none;
-  font-size: 0.95rem;
-  background: ${({ $active }) => ($active ? "#f3f4f6" : "transparent")};
-  font-weight: ${({ $active }) => ($active ? 600 : 400)};
+  font-size: 0.93rem;
+  font-weight: ${({ $active }) => ($active ? 600 : 500)};
+  background: ${({ $active }) => ($active ? "rgba(16, 61, 122, 0.07)" : "transparent")};
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 3px;
+    border-radius: 3px;
+    background: ${({ theme, $active }) =>
+      $active ? theme.gradients.sunrise : "transparent"};
+  }
 
   &:hover,
   &:focus-visible {
-    background: #f3f4f6;
+    background: rgba(16, 61, 122, 0.07);
+    color: ${({ theme }) => theme.colors.trustBlue};
   }
 `;
 
@@ -128,15 +217,16 @@ const MainCol = styled.main`
 `;
 
 const SignOutButton = styled.button`
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   width: 100%;
   display: block;
   padding: 0.6rem 0.85rem;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
   background: #fff;
   color: #991b1b;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
   text-align: left;
 
@@ -150,12 +240,9 @@ const SignOutButton = styled.button`
 export function DashboardShell({ me, children }: { me: Me; children: React.ReactNode }) {
   const pathname = usePathname() ?? "";
   const router = useRouter();
-  const [open, setOpen] = useState(false);
 
-  const activeLabel =
-    [...NAV].reverse().find((n) =>
-      n.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(n.href),
-    )?.label ?? "Dashboard";
+  const isActive = (href: string) =>
+    href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
 
   const signOut = useCallback(async () => {
     try {
@@ -168,37 +255,36 @@ export function DashboardShell({ me, children }: { me: Me; children: React.React
   return (
     <ToastProvider>
       <Wrap>
-        <MobileHeader>
-          <MobileTitle>{activeLabel}</MobileTitle>
-          <MenuButton
-            type="button"
-            aria-expanded={open}
-            aria-controls="dashboard-nav"
-            onClick={() => setOpen((v) => !v)}
-          >
-            {open ? "Close" : "Menu"}
-          </MenuButton>
-        </MobileHeader>
+        <MobileNav aria-label="Dashboard sections">
+          <MobileNavTop>
+            <h2>{me.user?.display_name ?? "Dashboard"}</h2>
+            <MobileSignOut type="button" onClick={signOut}>
+              Sign out
+            </MobileSignOut>
+          </MobileNavTop>
+          <TabRow role="tablist">
+            {NAV.map((n) => (
+              <Tab key={n.href} href={n.href} $active={isActive(n.href)} role="tab">
+                {n.label}
+              </Tab>
+            ))}
+          </TabRow>
+        </MobileNav>
 
-        <Aside id="dashboard-nav" $open={open}>
-          <h2>{me.user?.display_name ?? "Dashboard"}</h2>
+        <Aside aria-label="Dashboard">
+          <AsideHeader>
+            <h2>{me.user?.display_name ?? "Dashboard"}</h2>
+            <small>Supporter area</small>
+          </AsideHeader>
           <nav aria-label="Dashboard">
             <NavList>
-              {NAV.map((n) => {
-                const active =
-                  n.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(n.href);
-                return (
-                  <li key={n.href}>
-                    <NavLink
-                      href={n.href}
-                      $active={active}
-                      onClick={() => setOpen(false)}
-                    >
-                      {n.label}
-                    </NavLink>
-                  </li>
-                );
-              })}
+              {NAV.map((n) => (
+                <li key={n.href}>
+                  <NavLink href={n.href} $active={isActive(n.href)}>
+                    {n.label}
+                  </NavLink>
+                </li>
+              ))}
             </NavList>
           </nav>
           <SignOutButton type="button" onClick={signOut}>
