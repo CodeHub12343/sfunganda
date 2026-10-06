@@ -512,6 +512,10 @@ function subjectFor(template: string, data: Record<string, unknown>): string {
       return "Confirm your email — Sarah's Foundation";
     case "supporter_already_registered":
       return "You already have a Sarah's Foundation account";
+    case "supporter_email_verify":
+      return "Confirm this email for your Sarah's Foundation account";
+    case "donation_claim_code":
+      return `Your donation claim code (${String(data.donation_id ?? "")})`;
     case "accomplishment_published":
       return `${String(data.project_name ?? "Sarah's Foundation")}: ${String(data.accomplishment_title ?? "A new update")}`;
     case "donation_receipt":

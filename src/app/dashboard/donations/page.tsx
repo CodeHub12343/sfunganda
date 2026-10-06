@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import { api, ApiClientError } from "@/lib/api";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/States";
+import { useToast } from "@/components/ui/Toast";
 
 export const dynamic = "force-dynamic";
 
@@ -32,18 +33,77 @@ function statusTone(status: string): "success" | "warn" | "muted" {
 }
 
 export default function DonationsPage() {
+  const toast = useToast();
   const [data, setData] = useState<{ items: Donation[]; unverified: boolean } | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        setData(await api<{ items: Donation[]; unverified: boolean }>("/me/donations"));
-      } catch (e) {
-        setErr((e as ApiClientError).message);
-      }
-    })();
+  const load = useCallback(async () => {
+    try {
+      setData(await api<{ items: Donation[]; unverified: boolean }>("/me/donations"));
+    } catch (e) {
+      setErr((e as ApiClientError).message);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Claim-a-donation state.
+  const [claimRef, setClaimRef] = useState("");
+  const [claimCode, setClaimCode] = useState("");
+  const [claimStage, setClaimStage] = useState<"idle" | "code_sent" | "sending" | "verifying">("idle");
+  const [claimHint, setClaimHint] = useState<string>("");
+
+  async function sendClaimCode() {
+    const trimmed = claimRef.trim();
+    if (!trimmed) return;
+    setClaimStage("sending");
+    try {
+      const r = await api<{ sent_hint: string }>("/me/donations/claim", {
+        json: { public_id: trimmed },
+      });
+      setClaimHint(r.sent_hint);
+      setClaimStage("code_sent");
+      toast.push({
+        tone: "success",
+        message: `If this reference is valid, a 6‑digit code was sent to ${r.sent_hint}.`,
+      });
+    } catch (e) {
+      setClaimStage("idle");
+      toast.push({ tone: "danger", message: (e as ApiClientError).message });
+    }
+  }
+
+  async function verifyClaim() {
+    const trimmed = claimRef.trim();
+    const code = claimCode.trim();
+    if (!/^\d{6}$/.test(code)) {
+      toast.push({ tone: "danger", message: "Enter the 6-digit code." });
+      return;
+    }
+    setClaimStage("verifying");
+    try {
+      await api("/me/donations/claim/verify", {
+        json: { public_id: trimmed, code },
+      });
+      toast.push({ tone: "success", message: "Donation linked to your account." });
+      setClaimRef("");
+      setClaimCode("");
+      setClaimHint("");
+      setClaimStage("idle");
+      void load();
+    } catch (e) {
+      setClaimStage("code_sent");
+      toast.push({ tone: "danger", message: (e as ApiClientError).message });
+    }
+  }
+
+  function resetClaim() {
+    setClaimStage("idle");
+    setClaimCode("");
+    setClaimHint("");
+  }
 
   const stats = useMemo(() => {
     if (!data?.items?.length) return null;
@@ -118,6 +178,60 @@ export default function DonationsPage() {
           </StatCard>
         </StatGrid>
       ) : null}
+
+      <ClaimCard>
+        <ClaimHead>
+          <h2>Claim a past donation</h2>
+          <p>
+            If you donated under a different email, enter the reference from your
+            receipt (<code>DON-YYYY-#####</code>). We&apos;ll send a one‑time code to
+            the email on that receipt so you can attach the donation to your account.
+          </p>
+        </ClaimHead>
+        {claimStage === "idle" || claimStage === "sending" ? (
+          <ClaimRow>
+            <Input
+              value={claimRef}
+              onChange={(e) => setClaimRef(e.target.value.toUpperCase())}
+              placeholder="DON-2026-00042"
+              aria-label="Donation reference"
+            />
+            <PrimaryBtn
+              type="button"
+              onClick={sendClaimCode}
+              disabled={claimStage === "sending" || !claimRef.trim()}
+            >
+              {claimStage === "sending" ? "Sending…" : "Send code"}
+            </PrimaryBtn>
+          </ClaimRow>
+        ) : (
+          <>
+            <Hint>
+              Enter the 6-digit code we sent to <strong>{claimHint}</strong>.
+            </Hint>
+            <ClaimRow>
+              <Input
+                value={claimCode}
+                onChange={(e) => setClaimCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="123456"
+                aria-label="6-digit code"
+              />
+              <PrimaryBtn
+                type="button"
+                onClick={verifyClaim}
+                disabled={claimStage === "verifying" || claimCode.length !== 6}
+              >
+                {claimStage === "verifying" ? "Linking…" : "Link donation"}
+              </PrimaryBtn>
+            </ClaimRow>
+            <GhostLink type="button" onClick={resetClaim}>
+              Use a different reference
+            </GhostLink>
+          </>
+        )}
+      </ClaimCard>
 
       {data.items.length === 0 ? (
         <EmptyState
@@ -380,6 +494,116 @@ const StatusBadge = styled.span<{ $tone: "success" | "warn" | "muted" }>`
         : "rgba(107, 122, 147, 0.14)"};
   color: ${({ $tone }) =>
     $tone === "success" ? "#15803D" : $tone === "warn" ? "#B45309" : "#41506A"};
+`;
+
+const ClaimCard = styled.section`
+  background: #fff;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-left: 4px solid ${({ theme }) => theme.colors.sunriseOrange};
+  border-radius: ${({ theme }) => theme.radius.md};
+  box-shadow: ${({ theme }) => theme.shadow.ring};
+  padding: 1.25rem 1.3rem;
+  display: grid;
+  gap: 0.85rem;
+`;
+
+const ClaimHead = styled.div`
+  display: grid;
+  gap: 0.3rem;
+
+  h2 {
+    margin: 0;
+    font-family: ${({ theme }) => theme.font.heading};
+    font-size: 1.05rem;
+    color: ${({ theme }) => theme.colors.trustBlue};
+  }
+
+  p {
+    margin: 0;
+    color: ${({ theme }) => theme.colors.inkMuted};
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: ${({ theme }) => theme.colors.bgSoft};
+    padding: 0.05rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
+  }
+`;
+
+const ClaimRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const Input = styled.input`
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: #fff;
+  color: ${({ theme }) => theme.colors.ink};
+  font-size: 0.95rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.sunriseOrange};
+    outline-offset: 1px;
+    border-color: ${({ theme }) => theme.colors.trustBlue};
+  }
+`;
+
+const PrimaryBtn = styled.button`
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.gradients.sunrise};
+  color: #1a0f00;
+  font-weight: 700;
+  font-size: 0.88rem;
+  box-shadow: ${({ theme }) => theme.shadow.glow};
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+`;
+
+const Hint = styled.div`
+  color: ${({ theme }) => theme.colors.inkSoft};
+  font-size: 0.86rem;
+
+  strong {
+    color: ${({ theme }) => theme.colors.trustBlue};
+  }
+`;
+
+const GhostLink = styled.button`
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.sunriseOrange};
+  font-weight: 600;
+  font-size: 0.84rem;
+  text-align: left;
+  width: fit-content;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const VerifyCard = styled.div`

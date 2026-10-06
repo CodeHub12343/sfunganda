@@ -45,3 +45,24 @@ export const followBody = z.object({
 export const deletionRequestBody = z.object({
   confirm_email: email,
 });
+
+// Supporter emails — add a secondary address, verify it, remove it.
+export const addEmailBody = z.object({ email });
+export const verifyEmailAliasBody = z.object({
+  token: z.string().min(10).max(100),
+});
+
+// Donation claim — attach a historic public_id to this account.
+export const donationPublicIdBody = z.object({
+  public_id: z
+    .string()
+    .trim()
+    .regex(/^DON-\d{4}-\d{3,8}$/i, "expected format DON-YYYY-#####"),
+});
+export const donationClaimVerifyBody = z.object({
+  public_id: z
+    .string()
+    .trim()
+    .regex(/^DON-\d{4}-\d{3,8}$/i, "expected format DON-YYYY-#####"),
+  code: z.string().regex(/^\d{6}$/, "6-digit code"),
+});

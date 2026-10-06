@@ -79,6 +79,10 @@ export type { LoanDoc, LoanDirection, LoanStatus, RepaymentSchedule } from "./Lo
 export type { FundRestriction } from "./Fund.js";
 export { SupporterProfile } from "./SupporterProfile.js";
 export type { SupporterProfileDoc, NotificationPrefs, NotificationChannel, NotificationFrequency } from "./SupporterProfile.js";
+export { SupporterEmail } from "./SupporterEmail.js";
+export type { SupporterEmailDoc } from "./SupporterEmail.js";
+export { DonationClaim } from "./DonationClaim.js";
+export type { DonationClaimDoc } from "./DonationClaim.js";
 export { ProjectFollow } from "./ProjectFollow.js";
 export type { ProjectFollowDoc } from "./ProjectFollow.js";
 export { Notification } from "./Notification.js";

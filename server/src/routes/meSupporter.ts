@@ -3,9 +3,13 @@ import mongoose from "mongoose";
 import { requireAuth } from "@/middleware/authMiddleware.js";
 import { asyncHandler, auth, parseBody } from "./_shared.js";
 import {
+  addEmailBody,
   deletionRequestBody,
+  donationClaimVerifyBody,
+  donationPublicIdBody,
   followBody,
   preferencesBody,
+  verifyEmailAliasBody,
 } from "@shared/schemas/supporters.js";
 import {
   cancelDeletion,
@@ -13,6 +17,13 @@ import {
   requestDeletion,
   updatePreferences,
 } from "@/services/supporters.js";
+import {
+  addEmail,
+  listEmails,
+  removeEmail,
+  verifyEmail as verifySupporterEmail,
+} from "@/services/supporterEmails.js";
+import { openClaim, verifyClaim } from "@/services/donationClaims.js";
 import { followProject, listMyFollows, unfollowProject } from "@/services/follows.js";
 import {
   listMyNotifications,
@@ -111,6 +122,68 @@ router.get(
   })
 );
 
+// ---- Secondary emails -----------------------------------------------------
+
+router.get(
+  "/emails",
+  asyncHandler(async (req, res) => {
+    const a = auth(req);
+    const data = await listEmails(a.actor.user_id, a.actor.organization_id);
+    res.json({ data });
+  })
+);
+
+router.post(
+  "/emails",
+  asyncHandler(async (req, res) => {
+    const a = auth(req);
+    const body = parseBody(addEmailBody, req.body);
+    await addEmail(a.actor.user_id, a.actor.organization_id, body.email);
+    res.json({ data: { ok: true } });
+  })
+);
+
+router.post(
+  "/emails/verify",
+  asyncHandler(async (req, res) => {
+    const a = auth(req);
+    const body = parseBody(verifyEmailAliasBody, req.body);
+    const r = await verifySupporterEmail(a.actor.user_id, a.actor.organization_id, body.token);
+    res.json({ data: r });
+  })
+);
+
+router.delete(
+  "/emails/:id",
+  asyncHandler(async (req, res) => {
+    const a = auth(req);
+    await removeEmail(a.actor.user_id, a.actor.organization_id, String(req.params.id ?? ""));
+    res.json({ data: { ok: true } });
+  })
+);
+
+// ---- Donation claim -------------------------------------------------------
+
+router.post(
+  "/donations/claim",
+  asyncHandler(async (req, res) => {
+    const a = auth(req);
+    const body = parseBody(donationPublicIdBody, req.body);
+    const r = await openClaim(a.actor.user_id, a.actor.organization_id, body.public_id);
+    res.json({ data: r });
+  })
+);
+
+router.post(
+  "/donations/claim/verify",
+  asyncHandler(async (req, res) => {
+    const a = auth(req);
+    const body = parseBody(donationClaimVerifyBody, req.body);
+    const r = await verifyClaim(a.actor.user_id, a.actor.organization_id, body.public_id, body.code);
+    res.json({ data: r });
+  })
+);
+
 // ---- Follows --------------------------------------------------------------
 
 router.get(
@@ -136,7 +209,11 @@ router.delete(
   "/follows/:project_id",
   asyncHandler(async (req, res) => {
     const a = auth(req);
-    await unfollowProject(a.actor.user_id, a.actor.organization_id, req.params.project_id);
+    await unfollowProject(
+      a.actor.user_id,
+      a.actor.organization_id,
+      String(req.params.project_id ?? "")
+    );
     res.json({ data: { ok: true } });
   })
 );

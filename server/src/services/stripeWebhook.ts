@@ -8,6 +8,7 @@ import {
   Organization,
   Project,
   StripeEvent,
+  SupporterEmail,
   User,
 } from "@/models/index.js";
 import { AppError } from "@/util/errors.js";
@@ -228,6 +229,18 @@ async function handleCharge(ev: StripeEventPayload, orgId: mongoose.Types.Object
       .select({ _id: 1 })
       .lean();
     if (u) supporterUserId = u._id;
+  }
+  // Verified secondary emails attached to a supporter — a donor may give
+  // from `work@x.com` while their account is `personal@x.com`.
+  if (!supporterUserId && normalizedEmail) {
+    const alias = await SupporterEmail.findOne({
+      organization_id: orgId,
+      email: normalizedEmail,
+      verified_at: { $ne: null },
+    })
+      .select({ user_id: 1 })
+      .lean();
+    if (alias) supporterUserId = alias.user_id;
   }
 
   const session = await mongoose.startSession();

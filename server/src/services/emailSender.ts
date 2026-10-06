@@ -10,6 +10,8 @@ import { env } from "@/config/env.js";
 type Template =
   | "supporter_verify"
   | "supporter_already_registered"
+  | "supporter_email_verify"
+  | "donation_claim_code"
   | "accomplishment_published"
   | "donation_receipt";
 
@@ -92,6 +94,50 @@ function render(template: Template, data: Record<string, unknown>): { text: stri
 <p>Thank you for following along.</p>
 <hr/>
 <p style="color:#6b7280;font-size:0.85rem"><a href="${esc(unsub)}">Unsubscribe or change your preferences</a></p>`;
+      return { text, html };
+    }
+    case "supporter_email_verify": {
+      const name = String(data.display_name ?? "there");
+      const url = String(data.verify_url ?? "");
+      const hours = Number(data.expires_hours ?? 24);
+      const text = [
+        `Hi ${name},`,
+        "",
+        "Someone added this email to a Sarah's Foundation supporter account.",
+        "Open the link below to confirm so donations from this address are",
+        "attached to that account:",
+        url,
+        "",
+        `The link expires in ${hours} hours.`,
+        "",
+        "If you didn't request this, you can ignore this email.",
+      ].join("\n");
+      const html = `<p>Hi ${esc(name)},</p>
+<p>Someone added this email to a Sarah's Foundation supporter account. Confirm to attach donations from this address to that account:</p>
+<p><a href="${esc(url)}">Confirm this email</a></p>
+<p>The link expires in ${hours} hours.</p>
+<p>If you didn't request this, you can ignore this email.</p>`;
+      return { text, html };
+    }
+    case "donation_claim_code": {
+      const name = String(data.display_name ?? "there");
+      const code = String(data.code ?? "");
+      const donation_id = String(data.donation_id ?? "");
+      const minutes = Number(data.expires_minutes ?? 15);
+      const text = [
+        `Hi ${name},`,
+        "",
+        `Your Sarah's Foundation claim code for donation ${donation_id} is:`,
+        "",
+        `  ${code}`,
+        "",
+        `This code expires in ${minutes} minutes. If you didn't request it,`,
+        "you can ignore this email — no changes have been made to the donation.",
+      ].join("\n");
+      const html = `<p>Hi ${esc(name)},</p>
+<p>Your Sarah's Foundation claim code for donation <code>${esc(donation_id)}</code> is:</p>
+<p style="font-size:1.6rem;font-weight:700;letter-spacing:0.2em">${esc(code)}</p>
+<p>This code expires in ${minutes} minutes. If you didn't request it, you can ignore this email.</p>`;
       return { text, html };
     }
     case "donation_receipt": {
