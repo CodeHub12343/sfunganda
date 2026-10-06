@@ -712,7 +712,7 @@ function LegacyProjects() {
                     milestones · {p.progress_pct}% complete
                   </small>
                 </div>
-                <StatusBadge tone={p.status === "active" ? "active" : "pending"}>
+                <StatusBadge tone={p.status === "active" ? "success" : "warning"}>
                   {p.status}
                 </StatusBadge>
               </div>
