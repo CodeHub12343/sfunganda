@@ -16,7 +16,11 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-async function defaultOrgId(): Promise<mongoose.Types.ObjectId> {
+async function defaultOrgId(req?: import("express").Request): Promise<mongoose.Types.ObjectId> {
+  if (req) {
+    const t = (req as unknown as { org?: { id: mongoose.Types.ObjectId } }).org;
+    if (t) return t.id;
+  }
   const org = await Organization.findOne({}).sort({ created_at: 1 }).lean();
   if (!org) throw new AppError("unavailable", "no organization configured");
   return org._id;
@@ -43,7 +47,7 @@ router.post(
       });
     }
     const ctx = requestCtx(req);
-    const organization_id = await defaultOrgId();
+    const organization_id = await defaultOrgId(req);
     const result = await recordVolunteerSignup({
       organization_id,
       full_name: body.full_name,

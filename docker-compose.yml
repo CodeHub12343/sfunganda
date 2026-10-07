@@ -3,11 +3,12 @@
 #   • mongo       — a single-node replica set (so Mongoose transactions work)
 #   • mailpit     — SMTP sink for the mail worker (http://localhost:8025)
 #   • api         — the Express service
-#   • worker      — the outbox worker (same image, different CMD)
 #
+# The outbox worker is temporarily disabled (no hosting budget for a second
+# always-on process). The service definition is kept below, commented out,
+# so it can be re-enabled by uncommenting when a worker host is available.
 # Front end runs via `npm run dev` on the host at :3000 and talks to the API
-# through the Next.js rewrite layer. In production, each service runs on its
-# own always-on Node host behind Cloudflare.
+# through the Next.js rewrite layer.
 # ---------------------------------------------------------------------------
 
 services:
@@ -48,19 +49,19 @@ services:
     ports:
       - "4000:4000"
 
-  worker:
-    build:
-      context: ./server
-    env_file: ./server/.env
-    environment:
-      MONGO_URI: mongodb://mongo:27017/sfuganda?replicaSet=rs0
-      SMTP_HOST: mailpit
-      SMTP_PORT: "1025"
-      SMTP_SECURE: "false"
-    depends_on:
-      mongo:
-        condition: service_healthy
-    command: ["node", "dist/worker/index.js"]
+  # worker:  # temporarily disabled — uncomment to re-enable the outbox worker
+  #   build:
+  #     context: ./server
+  #   env_file: ./server/.env
+  #   environment:
+  #     MONGO_URI: mongodb://mongo:27017/sfuganda?replicaSet=rs0
+  #     SMTP_HOST: mailpit
+  #     SMTP_PORT: "1025"
+  #     SMTP_SECURE: "false"
+  #   depends_on:
+  #     mongo:
+  #       condition: service_healthy
+  #   command: ["node", "dist/worker/index.js"]
 
 volumes:
   mongodata:

@@ -9,6 +9,10 @@ export const ROLES = [
   "media_manager",
   "field_member",
   "supporter",
+  // Phase 11 — named safeguarding lead. Grants viewer access to the
+  // children's future fund alongside the founder; approval of
+  // distributions still requires the founder.
+  "safeguarding_lead",
 ] as const;
 export type Role = (typeof ROLES)[number];
 
@@ -55,5 +59,4 @@ RoleAssignmentSchema.index(
 RoleAssignmentSchema.index({ organization_id: 1, user_id: 1, revoked_at: 1 });
 
 export const RoleAssignment =
-  mongoose.models.RoleAssignment ??
-  mongoose.model<RoleAssignmentDoc>("RoleAssignment", RoleAssignmentSchema);
+  (mongoose.models.RoleAssignment as mongoose.Model<RoleAssignmentDoc> | undefined) ?? mongoose.model<RoleAssignmentDoc>("RoleAssignment", RoleAssignmentSchema);

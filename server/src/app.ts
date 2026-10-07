@@ -15,6 +15,29 @@ import auditRoutes from "./routes/audit.js";
 import donationsRoutes from "./routes/donations.js";
 import volunteersRoutes from "./routes/volunteers.js";
 import healthRoutes from "./routes/health.js";
+import mediaRoutes from "./routes/media.js";
+import videosRoutes from "./routes/videos.js";
+import photosRoutes from "./routes/photos.js";
+import mediaWebhookRoutes from "./routes/mediaWebhooks.js";
+import projectsRoutes from "./routes/projects.js";
+import accomplishmentsRoutes from "./routes/accomplishments.js";
+import metricsRoutes from "./routes/metrics.js";
+import publicPortalRoutes from "./routes/publicPortal.js";
+import financeRoutes from "./routes/finance.js";
+import financePhase6Routes from "./routes/financePhase6.js";
+import stripeWebhookRoutes from "./routes/stripeWebhook.js";
+import adminBusinessesRoutes from "./routes/adminBusinesses.js";
+import adminReportsRoutes from "./routes/adminReports.js";
+import supporterRoutes from "./routes/supporters.js";
+import meSupporterRoutes from "./routes/meSupporter.js";
+import aiRoutes from "./routes/ai.js";
+import videoSummariesRoutes from "./routes/videoSummaries.js";
+import beneficiariesRoutes from "./routes/beneficiaries.js";
+import publicChildrenFundRoutes from "./routes/publicChildrenFund.js";
+import socialRoutes from "./routes/social.js";
+import organizationRoutes from "./routes/organization.js";
+import publicBrandingRoutes from "./routes/publicBranding.js";
+import { resolveTenant } from "@/middleware/tenant.js";
 
 export function buildApp() {
   const app = express();
@@ -57,12 +80,24 @@ export function buildApp() {
     })
   );
 
-  // Body limits (§10.2). JSON only.
-  app.use(express.json({ limit: "64kb" }));
+  // Body limits (§10.2). JSON only. Webhook routes mount their own
+  // express.raw() to preserve the signed body, so skip JSON parsing for
+  // that mount — otherwise req.body is consumed as parsed JSON before the
+  // webhook route's raw() can read the bytes.
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/v1/webhooks/")) return next();
+    return express.json({ limit: "64kb" })(req, res, next);
+  });
   app.use(cookieParser());
 
   // Health is public and does not require the proxy secret.
   app.use("/health", healthRoutes);
+
+  // Provider webhooks ship their own authenticity signatures and must not
+  // go through the internal-proxy gate. Mount BEFORE the gate so the
+  // provider talks to the API directly.
+  app.use("/v1/webhooks", mediaWebhookRoutes);
+  app.use("/v1/webhooks", stripeWebhookRoutes);
 
   // Everything else must come through our Next.js rewrite layer (or an
   // explicit server-to-server caller with the shared secret).
@@ -74,12 +109,37 @@ export function buildApp() {
 
   app.use(attachAuth);
 
+  // Phase 13 — tenant resolution. Runs after auth so authenticated calls
+  // can still trust `req.auth.actor.organization_id` for their write
+  // paths while public reads use the host-matched `req.org`.
+  app.use(resolveTenant);
+
   app.use("/v1/auth", authRoutes);
   app.use("/v1/me", meRoutes);
   app.use("/v1/admin/users", adminUsersRoutes);
   app.use("/v1/audit", auditRoutes);
   app.use("/v1/donations", donationsRoutes);
   app.use("/v1/volunteers", volunteersRoutes);
+  app.use("/v1/media", mediaRoutes);
+  app.use("/v1/videos", videosRoutes);
+  app.use("/v1/photos", photosRoutes);
+  app.use("/v1/projects", projectsRoutes);
+  app.use("/v1/accomplishments", accomplishmentsRoutes);
+  app.use("/v1/metrics", metricsRoutes);
+  app.use("/v1/finance", financeRoutes);
+  app.use("/v1/finance", financePhase6Routes);
+  app.use("/v1/admin/businesses", adminBusinessesRoutes);
+  app.use("/v1/admin/reports", adminReportsRoutes);
+  app.use("/v1/supporters", supporterRoutes);
+  app.use("/v1/me", meSupporterRoutes);
+  app.use("/v1/ai", aiRoutes);
+  app.use("/v1/beneficiaries", beneficiariesRoutes);
+  app.use("/v1/social", socialRoutes);
+  app.use("/v1/admin/organization", organizationRoutes);
+  app.use("/v1/public/branding", publicBrandingRoutes);
+  app.use("/v1/public/videos", videoSummariesRoutes);
+  app.use("/v1/public/children-fund", publicChildrenFundRoutes);
+  app.use("/v1/public", publicPortalRoutes);
 
   // 404
   app.use((_req, _res, next) => next(new AppError("not_found", "not found")));

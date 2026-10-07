@@ -31,6 +31,35 @@ const privs = {
       "communities",
       "id_sequences",
       "volunteer_signups",
+      // Phase 2
+      "media_assets",
+      "media_links",
+      "consent_records",
+      // Phase 3
+      "project_categories",
+      "projects",
+      "project_milestones",
+      "accomplishments",
+      "accomplishment_revisions",
+      "metric_definitions",
+      "metric_entries",
+      // Phase 4
+      "funds",
+      "financial_transactions",
+      "expense_categories",
+      "financial_documents",
+      "donations",
+      "integrity_reports",
+      // Phase 6
+      "accounting_periods",
+      "exchange_rates",
+      "reconciliations",
+      "loans",
+      // Phase 7
+      "supporter_profiles",
+      "project_follows",
+      "notifications",
+      "email_deliveries",
     ].map((c) => ({
       resource: { db: DB, collection: c },
       actions: ["insert", "update", "remove", "createIndex"],

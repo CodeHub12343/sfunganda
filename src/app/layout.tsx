@@ -70,9 +70,44 @@ export default async function RootLayout({
   const h = await headers();
   const nonce = h.get("x-csp-nonce") ?? undefined;
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
-      <body>
-        <Providers nonce={nonce}>{children}</Providers>
+    <html
+      lang="en"
+      className={`${playfair.variable} ${inter.variable}`}
+      // Browser extensions (Dark Reader, Grammarly, password managers)
+      // routinely inject attributes on <html> and <body> before React
+      // hydrates, which trips React #418. Suppressing the warning on
+      // these two outer-most elements leaves hydration intact for every
+      // real app node.
+      suppressHydrationWarning
+    >
+      <body suppressHydrationWarning>
+        {/* Skip link — hidden until keyboard focus (WCAG 2.1 bypass blocks).
+            The inline style carries the request's CSP nonce; without it a
+            strict Content-Security-Policy blocks the rule and the link
+            renders at its default position (visible in the top-left). */}
+        <style nonce={nonce}>{`
+          .sfu-skip {
+            position: absolute;
+            left: -9999px;
+            top: 8px;
+            padding: 0.6rem 1rem;
+            background: #103D7A;
+            color: #fff;
+            border-radius: 8px;
+            text-decoration: none;
+            z-index: 10000;
+          }
+          .sfu-skip:focus {
+            left: 8px;
+            outline: 3px solid #F7B733;
+          }
+        `}</style>
+        <a href="#main" className="sfu-skip">
+          Skip to content
+        </a>
+        <Providers nonce={nonce}>
+          <div id="main">{children}</div>
+        </Providers>
       </body>
     </html>
   );

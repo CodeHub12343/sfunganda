@@ -38,3 +38,14 @@ export function auth(req: Request): AuthState {
   if (!auth) throw new AppError("unauthorized", "sign in required");
   return auth;
 }
+
+// Phase 13 — resolve the tenant's org id for a public (unauthenticated)
+// request. Uses `req.org` populated by middleware/tenant.ts; falls back
+// to a 404 when the host is unknown. Routes that need an org id for an
+// authenticated request should use `auth(req).actor.organization_id`
+// instead, which never leaves the actor's tenant.
+export function tenantOrgId(req: Request): import("mongoose").Types.ObjectId {
+  const t = (req as unknown as { org?: { id: import("mongoose").Types.ObjectId } }).org;
+  if (!t) throw new AppError("not_found", "no organisation is configured for this host");
+  return t.id;
+}

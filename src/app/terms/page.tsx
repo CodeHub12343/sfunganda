@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { LegalPage } from "@/components/layout/LegalPage";
@@ -26,7 +27,7 @@ export default function TermsPage() {
             operating in Uganda in partnership with Honest Need. The
             foundation is pursuing full legal registration; the status of
             that process is shared on our{" "}
-            <a href="/#transparency">Transparency</a> section.
+            <Link href="/#transparency">Transparency</Link> section.
           </p>
 
           <h2>Donations</h2>

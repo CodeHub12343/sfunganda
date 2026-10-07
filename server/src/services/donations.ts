@@ -13,6 +13,14 @@ const MAX_CENTS = 100_000_000;
 export type CheckoutInput = {
   amount: unknown;
   monthly: unknown;
+  project_slug?: string;
+  donor_name?: string;
+  donor_email?: string;
+  anonymous?: boolean;
+  // Set by the route from the session when the donor is signed in. The
+  // Stripe webhook uses this to link the donation to the supporter
+  // record directly, bypassing the email-match heuristic.
+  supporter_user_id?: string;
 };
 
 export type CheckoutResult = { url: string };
@@ -45,6 +53,21 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<Check
   );
   if (monthly) params.set("line_items[0][price_data][recurring][interval]", "month");
   else params.set("submit_type", "donate");
+
+  // Pass-through metadata — read by the webhook to designate the project
+  // and author attribution.
+  if (input.project_slug) params.set("metadata[project_slug]", input.project_slug);
+  if (input.donor_name) params.set("metadata[donor_name]", input.donor_name.slice(0, 160));
+  if (input.anonymous) params.set("metadata[anonymous]", "true");
+  if (input.supporter_user_id) {
+    params.set("metadata[supporter_user_id]", input.supporter_user_id);
+    params.set("payment_intent_data[metadata][supporter_user_id]", input.supporter_user_id);
+  }
+  if (input.donor_email) params.set("customer_email", input.donor_email);
+  // Mirror into payment_intent metadata so a payment_intent.succeeded event
+  // (which doesn't carry Checkout metadata) still finds the project.
+  if (input.project_slug)
+    params.set("payment_intent_data[metadata][project_slug]", input.project_slug);
 
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",

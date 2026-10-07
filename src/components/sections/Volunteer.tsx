@@ -32,6 +32,41 @@ const Intro = styled.div`
   }
 `;
 
+// Secondary path alongside the volunteer form so visitors who want an
+// account (follow projects, see receipts) can find /supporters/signup
+// without hunting through the footer.
+const SupporterCta = styled.div`
+  margin-top: 1.75rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.bg};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: ${({ theme }) => theme.shadow.soft};
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-width: 46ch;
+  strong {
+    color: ${({ theme }) => theme.colors.trustBlue};
+    font-size: 0.98rem;
+  }
+  span {
+    color: ${({ theme }) => theme.colors.inkSoft};
+    font-size: 0.9rem;
+  }
+  a {
+    margin-top: 0.4rem;
+    color: ${({ theme }) => theme.colors.sunriseOrange};
+    font-weight: ${({ theme }) => theme.weight.semibold};
+    text-decoration: none;
+    &:hover,
+    &:focus-visible {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  }
+`;
+
 const Panel = styled.form`
   padding: 1.5rem;
   border-radius: ${({ theme }) => theme.radius.lg};
@@ -336,6 +371,14 @@ export function Volunteer() {
               <SectionLabel>{volunteer.eyebrow}</SectionLabel>
               <h2>{volunteer.title}</h2>
               <p>{volunteer.lede}</p>
+              <SupporterCta>
+                <strong>Rather follow projects than volunteer?</strong>
+                <span>
+                  Create a free supporter account to receive updates and keep a
+                  record of your donations.
+                </span>
+                <a href="/supporters/signup">Join as a supporter →</a>
+              </SupporterCta>
             </Reveal>
           </Intro>
 

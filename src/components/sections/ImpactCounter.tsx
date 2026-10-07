@@ -5,7 +5,7 @@ import { Container } from "@/components/ui/Container";
 import { StatCounter } from "@/components/ui/StatCounter";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Reveal, RevealGroup, revealItem } from "@/components/ui/Reveal";
-import { impactStats } from "@/data/content";
+import { impactStats, type Stat } from "@/data/content";
 import { media } from "@/styles/theme";
 import { motion } from "framer-motion";
 
@@ -87,7 +87,7 @@ const Detail = styled.p`
   color: ${({ theme }) => theme.colors.onDarkSoft};
 `;
 
-export function ImpactCounter() {
+export function ImpactCounter({ stats = impactStats }: { stats?: Stat[] } = {}) {
   return (
     <Band id="impact">
       <Glow />
@@ -106,10 +106,10 @@ export function ImpactCounter() {
         </Head>
 
         <Grid>
-          {impactStats.map((s) => (
+          {stats.map((s) => (
             <Card key={s.label} variants={revealItem}>
               <Number>
-                <StatCounter value={s.value} suffix={s.suffix} />
+                <StatCounter value={s.value} suffix={s.suffix} prefix={s.prefix} />
               </Number>
               <Label>{s.label}</Label>
               <Detail>{s.detail}</Detail>

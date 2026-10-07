@@ -81,3 +81,34 @@ jobs:
           name: playwright-report
           path: playwright-report
           retention-days: 7
+
+  admin-a11y:
+    # Milestone 6 — axe-core gate for the admin mobile shell. Blocks the
+    # full flag flip. The suite is skipped when the signed-in session
+    # cookie secret is not set (fork PRs can't see secrets), so this job
+    # only "soft-fails" on forks: the step runs and the suite reports
+    # all specs skipped. On the main repository the secret is injected
+    # and axe-serious/critical violations fail the build.
+    name: Admin a11y — axe-core
+    needs: [web, api]
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      STRIPE_SECRET_KEY_TEST: sk_test_dummy_ci
+      INTERNAL_PROXY_SECRET: ci-internal-proxy-secret
+      ADMIN_A11Y_SESSION_COOKIE: ${{ secrets.ADMIN_A11Y_SESSION_COOKIE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run test:e2e:install
+      - run: npx playwright test tests/e2e/admin-a11y.spec.ts --project=chromium
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-a11y-report
+          path: playwright-report
+          retention-days: 14

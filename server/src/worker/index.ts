@@ -1,7 +1,9 @@
+import { pathToFileURL } from "node:url";
 import { connectDB } from "@/config/db.js";
 import { log } from "@/util/log.js";
 import { OutboxEvent } from "@/models/index.js";
 import { getHandler } from "./handlers.js";
+import { reportsSchedulerTick } from "./reportsScheduler.js";
 
 // =============================================================================
 // Outbox worker (§18). Claims one event at a time with findOneAndUpdate so
@@ -98,13 +100,21 @@ async function main(): Promise<void> {
 
   while (!stopping) {
     const did = await tick();
+    // Scheduled jobs (currently just the Phase 9 monthly report) are
+    // enqueued from this same loop. The scheduler debounces itself so an
+    // aggressive poll interval doesn't translate into aggressive enqueues.
+    await reportsSchedulerTick();
     if (!did) await new Promise((r) => setTimeout(r, POLL_MS));
   }
   log.info("worker.stopped");
   process.exit(0);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Entry-point guard: run `main()` when this file is launched directly, not
+// when it's imported for its exports. Hand-written path comparisons are
+// cross-platform-brittle (backslashes vs forward slashes, drive letters,
+// extra leading slashes on Windows) — use pathToFileURL to normalise.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((err) => {
     log.error({ err: err instanceof Error ? err.message : "unknown" }, "worker.crashed");
     process.exit(1);

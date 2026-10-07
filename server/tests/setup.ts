@@ -11,6 +11,9 @@ process.env.MAIL_FROM = "noreply@test.local";
 process.env.SMTP_HOST = "localhost";
 process.env.PUBLIC_SITE_URL = "http://localhost:3000";
 process.env.CORS_ORIGINS = "http://localhost:3000";
+// Set a placeholder MONGO_URI so env validation passes at import time — the
+// real URI is written in startTestDB() below.
+process.env.MONGO_URI = process.env.MONGO_URI ?? "mongodb://127.0.0.1:0/placeholder";
 
 let replSet: MongoMemoryReplSet | null = null;
 

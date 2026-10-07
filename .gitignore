@@ -1,5 +1,6 @@
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.*
 
@@ -36,3 +37,8 @@ next-env.d.ts
 coverage
 playwright-report
 test-results
+
+
+# local dev object-storage fallback (server/.uploads)
+.uploads
+

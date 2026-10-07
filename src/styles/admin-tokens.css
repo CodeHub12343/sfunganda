@@ -1,0 +1,159 @@
+/* Sarah's Foundation — Admin mobile design tokens.
+   Palette mirrors the public site's "Modern Humanitarian Luxury" theme
+   (src/styles/theme.ts): trustBlue as the institutional primary, sunriseOrange
+   and hopeGold as warm accents, foundationGreen for growth/success, warmCream
+   as the gentle background wash.
+
+   Light theme on :root; dark theme on [data-theme="dark"] and the system
+   preference. All admin-mobile components consume these variables, so the
+   admin shell inherits the same identity as the landing page without any
+   component rewrite. */
+
+:root {
+  /* Brand — trustBlue as the institutional anchor (#103D7A). */
+  --am-brand-600: #103d7a;
+  --am-brand-500: #1f5aa6;
+  --am-brand-50: #eaf1fb;
+
+  /* Warm secondary — sunriseOrange, drawn from the logo. */
+  --am-accent-500: #f28c28;
+  --am-accent-50: #fff2e2;
+
+  /* Status — foundationGreen for success, hopeGold for warn, warm red for
+     danger, skyBlue for info. Each paired with a tinted surface for banners. */
+  --am-success-600: #3d8b37;
+  --am-success-50: #e8f3e6;
+  --am-warning-600: #d98900;
+  --am-warning-50: #fff4d9;
+  --am-danger-600: #c2410c;
+  --am-danger-50: #fdece0;
+  --am-info-600: #1f5aa6;
+  --am-info-50: #eaf1fb;
+
+  /* Surface — warmCream wash under cards, white surfaces. */
+  --am-bg: #fff9f2;
+  --am-bg-soft: #fdfcf8;
+  --am-surface: #ffffff;
+  --am-surface-raised: #ffffff;
+  --am-border: rgba(16, 61, 122, 0.1);
+  --am-border-strong: rgba(16, 61, 122, 0.18);
+
+  /* Text — brand ink hierarchy. */
+  --am-ink: #0b1f3a;
+  --am-ink-muted: #41506a;
+  --am-ink-subtle: #6b7a93;
+  --am-ink-on-brand: #ffffff;
+
+  /* Radii — generous card radius matches the landing page's soft surfaces. */
+  --am-radius-sm: 8px;
+  --am-radius-md: 12px;
+  --am-radius-lg: 18px;
+  --am-radius-xl: 24px;
+  --am-radius-pill: 999px;
+
+  /* Elevation — softer, warmer shadows than the generic defaults, matching
+     the trustBlue-tinted shadows used across the public site. */
+  --am-shadow-1: 0 1px 3px rgba(8, 23, 53, 0.06);
+  --am-shadow-2: 0 10px 24px rgba(8, 23, 53, 0.08);
+  --am-shadow-3: 0 25px 80px rgba(8, 23, 53, 0.18);
+
+  /* Motion — same curves as src/styles/theme.ts. */
+  --am-dur-fast: 120ms;
+  --am-dur-base: 200ms;
+  --am-dur-slow: 320ms;
+  --am-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --am-ease-emphasis: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Z */
+  --am-z-sticky: 50;
+  --am-z-sheet-backdrop: 90;
+  --am-z-sheet: 91;
+  --am-z-modal-backdrop: 100;
+  --am-z-modal: 101;
+  --am-z-toast: 110;
+
+  /* Brand gradients — exposed for hero cards (used by Finance hero today). */
+  --am-grad-sunrise: linear-gradient(135deg, #f7b733 0%, #f28c28 48%, #f59e0b 100%);
+  --am-grad-trust: linear-gradient(135deg, #103d7a 0%, #07111d 100%);
+  --am-grad-growth: linear-gradient(135deg, #3d8b37 0%, #1e5d35 100%);
+  --am-grad-dawn: linear-gradient(180deg, #fff9f2 0%, #ffffff 60%, #f8fafc 100%);
+}
+
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --am-brand-600: #4a7fc9;
+    --am-brand-500: #78a0db;
+    --am-brand-50: rgba(74, 127, 201, 0.15);
+
+    --am-accent-500: #f7b733;
+    --am-accent-50: rgba(247, 183, 51, 0.14);
+
+    --am-success-600: #6cb366;
+    --am-success-50: rgba(108, 179, 102, 0.14);
+    --am-warning-600: #f7b733;
+    --am-warning-50: rgba(247, 183, 51, 0.14);
+    --am-danger-600: #ef7a4e;
+    --am-danger-50: rgba(239, 122, 78, 0.14);
+    --am-info-600: #78a0db;
+    --am-info-50: rgba(120, 160, 219, 0.14);
+
+    --am-bg: #07111d;
+    --am-bg-soft: #0f1b2d;
+    --am-surface: #152338;
+    --am-surface-raised: #1b2b45;
+    --am-border: rgba(169, 183, 204, 0.12);
+    --am-border-strong: rgba(169, 183, 204, 0.22);
+
+    --am-ink: #f4f7fb;
+    --am-ink-muted: #a9b7cc;
+    --am-ink-subtle: #7988a0;
+    --am-ink-on-brand: #07111d;
+
+    --am-shadow-1: 0 0 0 1px var(--am-border);
+    --am-shadow-2: 0 0 0 1px var(--am-border);
+    --am-shadow-3: 0 24px 60px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  --am-brand-600: #4a7fc9;
+  --am-brand-500: #78a0db;
+  --am-brand-50: rgba(74, 127, 201, 0.15);
+
+  --am-accent-500: #f7b733;
+  --am-accent-50: rgba(247, 183, 51, 0.14);
+
+  --am-success-600: #6cb366;
+  --am-success-50: rgba(108, 179, 102, 0.14);
+  --am-warning-600: #f7b733;
+  --am-warning-50: rgba(247, 183, 51, 0.14);
+  --am-danger-600: #ef7a4e;
+  --am-danger-50: rgba(239, 122, 78, 0.14);
+  --am-info-600: #78a0db;
+  --am-info-50: rgba(120, 160, 219, 0.14);
+
+  --am-bg: #07111d;
+  --am-bg-soft: #0f1b2d;
+  --am-surface: #152338;
+  --am-surface-raised: #1b2b45;
+  --am-border: rgba(169, 183, 204, 0.12);
+  --am-border-strong: rgba(169, 183, 204, 0.22);
+
+  --am-ink: #f4f7fb;
+  --am-ink-muted: #a9b7cc;
+  --am-ink-subtle: #7988a0;
+  --am-ink-on-brand: #07111d;
+
+  --am-shadow-1: 0 0 0 1px var(--am-border);
+  --am-shadow-2: 0 0 0 1px var(--am-border);
+  --am-shadow-3: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* Accessibility: honour reduced motion by shortening durations. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --am-dur-fast: 0ms;
+    --am-dur-base: 0ms;
+    --am-dur-slow: 0ms;
+  }
+}

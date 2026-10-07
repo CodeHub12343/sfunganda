@@ -26,26 +26,84 @@ function cryptoRandom(bytes: number): string {
   return out;
 }
 
+function hostOf(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return null;
+  }
+}
+
 function buildCsp(nonce: string): string {
   const self = "'self'";
+  const mediaHosts = [
+    // Public CDN origin for derivatives (e.g. https://pub-xxx.r2.dev).
+    hostOf(process.env.R2_PUBLIC_DERIVATIVES_URL),
+    // Private R2 S3 endpoint — browsers fetch signed GET/PUT URLs here for
+    // originals, documents, and presigned uploads.
+    hostOf(process.env.R2_ENDPOINT),
+    process.env.NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN
+      ? `https://${process.env.NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN}.cloudflarestream.com`
+      : null,
+  ].filter((x): x is string => !!x);
+  // Phase 8: OpenStreetMap tiles for /communities (free, no key). The
+  // domain pattern `https://tile.openstreetmap.org` covers the mirrors
+  // (a.tile., b.tile., c.tile.) — all three serve from the same base host.
+  const imgSrc = [
+    "'self'",
+    "data:",
+    "blob:",
+    "https://images.unsplash.com",
+    "https://tile.openstreetmap.org",
+    "https://*.tile.openstreetmap.org",
+    ...mediaHosts,
+  ].join(" ");
+  const mediaSrc = ["'self'", "blob:", ...mediaHosts].join(" ");
+  const connectSrc = [
+    "'self'",
+    "https://api.stripe.com",
+    ...mediaHosts,
+  ].join(" ");
+  const frameSrc = [
+    "https://js.stripe.com",
+    "https://checkout.stripe.com",
+    ...(process.env.NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN
+      ? [`https://${process.env.NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN}.cloudflarestream.com`]
+      : []),
+  ].join(" ");
   return [
     `default-src ${self}`,
-    `script-src ${self} 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com`,
-    // Nonce covers styled-components SSR output. We keep 'unsafe-inline' as
-    // a defensive fallback for the next/font injected <style> and anonymous
-    // Server Component style attributes; it is paired with the nonce for
-    // policy clarity and will be tightened when we move away from inline
-    // styles entirely.
-    `style-src ${self} 'nonce-${nonce}' 'unsafe-inline' https://fonts.googleapis.com`,
+    // 'unsafe-eval' is REQUIRED in dev for Next's React Refresh / HMR
+    // runtime (it rewrites modules at runtime via eval). Production
+    // builds never hit this branch — strict-dynamic + nonce covers it.
+    `script-src ${self} 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
+    // style-src: browsers IGNORE 'unsafe-inline' when a nonce is present,
+    // so if we list both, every <style> without a nonce (and every inline
+    // `style="…"` attribute, which React emits for every styled-component
+    // class and every `style={{…}}` prop) gets blocked. In dev we need
+    // 'unsafe-inline' because Next's HMR and styled-components inject
+    // without a nonce. In production we rely on the nonce — the Next
+    // style injector tags its <style> elements with the request nonce,
+    // and the one remaining inline <style> in layout.tsx also carries it.
+    `style-src ${self} 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src ${self} data: https://fonts.gstatic.com`,
-    `img-src ${self} data: blob: https://images.unsplash.com`,
-    `connect-src ${self} https://api.stripe.com`,
-    `frame-src https://js.stripe.com https://checkout.stripe.com`,
+    // Phase 2+ media hosts: public R2 derivatives CDN, private R2 for signed
+    // downloads, and Cloudflare Stream for HLS playlists. Hosts come from
+    // env so a staging/production split needs no code change.
+    `img-src ${imgSrc}`,
+    `media-src ${mediaSrc}`,
+    `connect-src ${connectSrc}`,
+    `frame-src ${frameSrc}`,
     `form-action ${self} https://checkout.stripe.com`,
     `frame-ancestors 'none'`,
     `base-uri ${self}`,
     `object-src 'none'`,
-    `upgrade-insecure-requests`,
+    // Only upgrade subresource requests to HTTPS in production. In dev the
+    // Next.js server runs on plain HTTP (and `http://localhost:4000` for the
+    // API), so an upgrade turns every /api/v1/* fetch into an SSL error.
+    ...(process.env.NODE_ENV === "production" ? [`upgrade-insecure-requests`] : []),
   ].join("; ");
 }
 

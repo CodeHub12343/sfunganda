@@ -7,6 +7,7 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Reveal, RevealGroup, revealItem } from "@/components/ui/Reveal";
 import { transparency, transparencyDocs } from "@/data/content";
 import { media } from "@/styles/theme";
+import { ChildrensFundSummary } from "@/components/children-fund/PublicSummary";
 
 const Head = styled.div`
   display: grid;
@@ -139,6 +140,8 @@ export function Transparency() {
             </Stat>
           ))}
         </Stats>
+
+        <ChildrensFundSummary />
 
         <Reveal delay={0.15}>
           <Docs>

@@ -15,6 +15,19 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // Phase 5 real-device profile: Pixel 7 viewport + Africa/Kampala
+    // locale + a throttled "Slow 3G"-ish network via a route-level
+    // delay fixture (configured in tests/e2e/uganda-profile.ts).
+    {
+      name: "mobile-uganda",
+      use: {
+        ...devices["Pixel 7"],
+        locale: "en-UG",
+        timezoneId: "Africa/Kampala",
+        geolocation: { latitude: 0.3476, longitude: 32.5825 },
+        permissions: [],
+      },
+    },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined
